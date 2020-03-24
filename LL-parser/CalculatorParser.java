@@ -2,7 +2,7 @@ import java.io.InputStream;
 import java.io.IOException;
 
 class CalculatorParser{
-    private int lookaheadToken, check_digit, x;
+    private int lookaheadToken, x;
     private InputStream in;
 
     public CalculatorParser(InputStream in) throws IOException{
@@ -26,7 +26,7 @@ class CalculatorParser{
     private void Exp2() throws IOException, ParseError{
         // System.out.printf("Exp2: lookaheadToken: [%c]\n", lookaheadToken);
         if(lookaheadToken == '\n' || lookaheadToken == -1 || lookaheadToken == '\r' || lookaheadToken == ')')
-    	    return;
+            return;
         else if(lookaheadToken == '+' || lookaheadToken == '-'){
             consume(lookaheadToken);
             Term1(); Exp2();
