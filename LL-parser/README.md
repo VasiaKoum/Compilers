@@ -1,4 +1,5 @@
-# LL-parser:
+# Compilers Project
+## LL-parser:
 
 For the first part of this homework you should implement a simple calculator. The calculator should accept expressions with the addition, subtraction, multiplication and division operators, as well as parentheses. The grammar (for multi-digit numbers) is summarized in:
 
