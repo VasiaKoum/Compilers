@@ -3,8 +3,11 @@
 For the first part of this homework you should implement a simple calculator. The calculator should accept expressions with the addition, subtraction, multiplication and division operators, as well as parentheses. The grammar (for multi-digit numbers) is summarized in:
 
 exp -> num | exp op exp | (exp)
+
 op -> + | - | * | /
+
 num -> digit | digit num
+
 digit -> 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
 
 You need to change this grammar to support priority between the operators, to remove the left recursion for LL parsing, etc.
