@@ -1,14 +1,6 @@
-/* Simple +/-/* expression language; parser evaluates constant expressions on the fly*/
-/**
- *  Package and Import Specifications
- */
 import java_cup.runtime.*;
 
-/**
- *  Usercode Components
- */
 parser code {:
-    // Connect this parser to a scanner!
     Scanner s;
     Parser(Scanner s){ this.s=s; }
 :}
@@ -16,36 +8,23 @@ parser code {:
 /* define how to connect to the scanner! */
 scan with {: return s.next_token(); :};
 
-/**
- *  Symbol Lists
- */
-
+/* Symbol Lists */
 /* Terminals (tokens returned by the scanner). */
-terminal            SEMI, PLUS, MINUS, TIMES, UMINUS, LPAREN, RPAREN;
-terminal Integer    NUMBER;        // our scanner provides numbers as integers
+terminal            PLUS, LPAREN, RPAREN, LBRACK, RBRACK, COMMA, IF, ELSE, PREFIX, REVERSE, IDENT, BOOLCOND;
+terminal String     STRING_LITERAL;        // our scanner provides numbers as strings
 
 /*  Non terminals */
 non terminal            expr_list;
 non terminal Integer    expr;      // used to store evaluated subexpressions
 
-/**
- *  Precedence Declarations
- */
-precedence left PLUS, MINUS;
-precedence left TIMES;
-precedence left UMINUS;
+/* Precedence Declarations */
+precedence left PLUS, ELSE;
 
-/**
- *  The Grammar Rules
- */
-expr_list ::= expr_list expr:e SEMI         {: System.out.println(e);:}
-            | expr:e SEMI                   {: System.out.println(e);:}
+/* The Grammar Rules */
+expr_list ::= expr_list expr:e              {: System.out.println(e);         :}
+            | expr:e                        {: System.out.println(e);         :}
 ;
-expr      ::= expr:e1 PLUS  expr:e2         {: RESULT = e1+e2;       :}
-             | expr:e1 MINUS expr:e2        {: RESULT = e1-e2;       :}
-             | expr:e1 TIMES expr:e2        {: RESULT = e1*e2;       :}
-             | MINUS expr:e                 {: RESULT = -e;          :}
-  	         %prec UMINUS
-             | LPAREN expr:e RPAREN	        {: RESULT = e;           :}
-             | NUMBER:n	                    {: RESULT = n;           :}
-             ;
+expr      ::= expr:e1 PLUS  expr:e2         {: RESULT = e1+e2;                :}
+             | LPAREN expr:e RPAREN	        {: RESULT = e;                    :}
+             | STRING_LITERAL:s	            {: RESULT = Integer.parseInt(s);  :}
+;
