@@ -25,7 +25,6 @@ WhiteSpace     = {LineTerminator} | [ \t\f]
 %%
 /* ------------------------Lexical Rules Section---------------------- */
 <YYINITIAL> {
-/* operators */
  "+"            { return symbol(sym.PLUS); }
  "("            { return symbol(sym.LPAREN); }
  ")"            { return symbol(sym.RPAREN); }
