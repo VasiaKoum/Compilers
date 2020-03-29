@@ -7,8 +7,7 @@
 public interface sym {
   /* terminals */
   public static final int IDENT = 12;
-  public static final int BOOLCOND = 13;
-  public static final int STRING_LITERAL = 14;
+  public static final int STRING_LITERAL = 13;
   public static final int PREFIX = 10;
   public static final int EOF = 0;
   public static final int PLUS = 2;
@@ -35,7 +34,6 @@ public interface sym {
   "PREFIX",
   "REVERSE",
   "IDENT",
-  "BOOLCOND",
   "STRING_LITERAL"
   };
 }

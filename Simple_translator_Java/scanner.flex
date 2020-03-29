@@ -17,7 +17,6 @@ private Symbol symbol(int type, Object value) {
 %}
 
 Ident = [a-zA-Z$_] [a-zA-Z0-9$_]*
-BoolCond = true | false
 LineTerminator = \r|\n|\r\n
 WhiteSpace     = {LineTerminator} | [ \t\f]
 
@@ -37,7 +36,7 @@ WhiteSpace     = {LineTerminator} | [ \t\f]
  "reverse"      { return symbol(sym.REVERSE); }
  \"             { stringBuffer.setLength(0); yybegin(STRING); }
  {Ident}        { return symbol(sym.IDENT, new String(yytext())); }
- {BoolCond}     { return symbol(sym.BOOLCOND); }
+ /* {BoolCond}     { return symbol(sym.BOOLCOND); } */
  {WhiteSpace}   { /* just skip what was found, do nothing */ }
 }
 
