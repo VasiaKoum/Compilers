@@ -1,3 +1,11 @@
-name()  {
+name(){
     "John"
+}
+
+name2()  {
+    "John2"
+}
+
+fullname(first_name, syr) {
+    "kati"
 }

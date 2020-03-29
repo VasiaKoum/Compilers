@@ -14,21 +14,20 @@ terminal            PLUS, LPAREN, RPAREN, LBRACK, RBRACK, COMMA, IF, ELSE, PREFI
 terminal String     STRING_LITERAL;        // our scanner provides numbers as strings
 
 /*  Non terminals */
-non terminal        begin, fdecl, func, name, body, returned;
-/* non terminal Integer    expr;  */
+non terminal        begin, fdecl, func, name, body, args, returned;
 
 /* Precedence Declarations */
 precedence left     ELSE;
 
 /* The Grammar Rules */
-
-/* name()  {
-    "John"
-} */
 begin     ::= fdecl:fd                          {: System.out.println("public static void main(String[] args){\n"+" "+"\n}\n");
                                                     System.out.println(fd);:};
-fdecl     ::= func:f                            {: RESULT = f; :};
-func      ::= name:n LBRACK body:b RBRACK       {: RESULT = "public static String "+n+"(){\n"+b+"\n}"; :};
-name      ::= IDENT:i LPAREN RPAREN             {: RESULT = i; :};
+fdecl     ::= fdecl:fd2 func:f                  {: RESULT = fd2+"\n\n"+f; :}
+             |func:f2                           {: RESULT = f2; :};
+func      ::= name:n LBRACK body:b RBRACK       {: RESULT = "public static String "+n+"{\n"+b+"\n}"; :};
+name      ::= IDENT:i LPAREN args:a RPAREN      {: RESULT = i+"("+a+")"; :};
+args      ::= args:a COMMA IDENT:i              {: RESULT = a+", "+i; :}
+             |IDENT:i                           {: RESULT = i; :}
+             |                                  {: RESULT = ""; :};
 body      ::= returned:r                        {: RESULT = "\treturn "+r+";"; :};
 returned  ::= STRING_LITERAL:s                  {: RESULT = "\""+s+"\""; :};
