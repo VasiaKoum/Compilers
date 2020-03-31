@@ -19,6 +19,7 @@ private Symbol symbol(int type, Object value) {
 Ident = [a-zA-Z$_] [a-zA-Z0-9$_]*
 LineTerminator = \r|\n|\r\n
 WhiteSpace     = {LineTerminator} | [ \t\f]
+/* ParBrack = ")" [ ]* "{" */
 
 %state STRING
 %%
@@ -36,8 +37,8 @@ WhiteSpace     = {LineTerminator} | [ \t\f]
  "reverse"      { return symbol(sym.REVERSE); }
  \"             { stringBuffer.setLength(0); yybegin(STRING); }
  {Ident}        { return symbol(sym.IDENT, new String(yytext())); }
- /* {BoolCond}     { return symbol(sym.BOOLCOND); } */
- {WhiteSpace}   { /* just skip what was found, do nothing */ }
+ /* {ParBrack} 	{ return symbol(sym.PARBRACK); } */
+ {WhiteSpace}   {  }
 }
 
 <STRING> {

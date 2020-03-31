@@ -3,9 +3,11 @@ name(){
 }
 
 name2()  {
-    "John2"
+    "rr"
 }
 
-fullname(first_name, syr) {
-    "kati"
+fullname(first_name, sep, last_name) {
+    first_name + sep + last_name
 }
+
+name(rrr)

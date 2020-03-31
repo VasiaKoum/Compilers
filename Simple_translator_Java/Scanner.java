@@ -723,7 +723,7 @@ private Symbol symbol(int type, Object value) {
             // fall through
           case 22: break;
           case 2:
-            { /* just skip what was found, do nothing */
+            { 
             }
             // fall through
           case 23: break;
