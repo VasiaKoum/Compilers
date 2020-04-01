@@ -1,9 +1,11 @@
 name()  {
-    "John"
+    if ("rerer")
+    "ererer"
+    else "sdede"
 }
 
-surname() {
-    "Doe"
+surname(x) {
+    x+x
 }
 
 fullname(first_name, sep, last_name) {
@@ -12,4 +14,4 @@ fullname(first_name, sep, last_name) {
 
 name()
 surname()
-fullname(name(), " ", surname())
+fullname(name(name(surname())), " ", surname())
