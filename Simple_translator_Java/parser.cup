@@ -14,45 +14,54 @@ terminal            PLUS, LPAREN, RPAREN, LBRACK, RBRACK, COMMA, IF, ELSE, PREFI
 terminal String     STRING_LITERAL;        // our scanner provides numbers as strings
 
 /*  Non terminals */
-non terminal        begin, fdecl, func, fcall, name, body, args, returned, concat, call, name2, args2, multargs;
+non terminal        begin, fdecl, decl, fcall, declname, body, declargs, returned, concat, call, callname, callargs, multargs, fcall_arg;
 
 /* Precedence Declarations */
 precedence left     ELSE;
 
 /* The Grammar Rules */
-begin     ::= fdecl:fd fcall:fc                 {: System.out.println("public static void main(String[] args){\n"+fc+"\n}\n");
-                                                    System.out.println(fd);:}
+begin     ::= fdecl:fd fcall:fc                         {: System.out.println("public static void main(String[] args){\n"+fc+"\n}\n");
+                                                        System.out.println(fd);:}
 ;
-fdecl     ::= fdecl:fd2 func:f                  {: RESULT = fd2+"\n\n"+f; :}
-             |func:f2                           {: RESULT = f2; :}
+/* FUNCTION DECLARATION */
+fdecl     ::= fdecl:fd decl:d                           {: RESULT = fd+"\n\n"+d; :}
+             |decl:d                                    {: RESULT = d; :}
 ;
-func      ::= name:n body:b RBRACK               {: RESULT = "public static String "+n+"{\n"+b+"\n}"; :}
+decl      ::= declname:d body:b RBRACK                  {: RESULT = "public static String "+d+"{\n"+b+"\n}"; :}
 ;
-name      ::= IDENT:i LPAREN args:a RPAREN LBRACK     {: RESULT = i+"("+a+")"; :}
-            |IDENT:i LPAREN RPAREN LBRACK     {: RESULT = i+"()"; :}
+declname  ::= IDENT:i LPAREN declargs:d RPAREN LBRACK   {: RESULT = i+"("+d+")"; :}
+             |IDENT:i LPAREN RPAREN LBRACK              {: RESULT = i+"()"; :}
 ;
-args      ::= args:a COMMA IDENT:i              {: RESULT = a+", "+i; :}
-             |IDENT:i                           {: RESULT = i; :}
+declargs  ::= declargs:d COMMA IDENT:i                  {: RESULT = d+", "+i; :}
+             |IDENT:i                                   {: RESULT = i; :}
 ;
-fcall     ::= fcall:fc call:c                   {: RESULT = fc+"\n"+c; :}
-             |call:c
+/* FUNCTION CALL */
+fcall     ::= call:c fcall:fc                           {: RESULT = "\tSystem.out.println("+c+");\n"+fc; :}
+             |call:c                                    {: RESULT = "\tSystem.out.println("+c+");"; :}
 ;
-call      ::= name2:n                           {: RESULT = n; :}
+fcall_arg ::= call:c fcall:fc                           {: RESULT = c+""+fc; :}
+             |call:c                                    {: RESULT = c; :}
 ;
-name2     ::= IDENT:i LPAREN args2:a RPAREN     {: RESULT = i+"("+a+")"; :}
-            |IDENT:i LPAREN RPAREN              {: RESULT = i+"()"; :}
+call      ::= callname:c                                {: RESULT = c; :}
 ;
-args2     ::= args2:a COMMA multargs:m          {: RESULT = a+", "+m; :}
-             |STRING_LITERAL:s                  {: RESULT = "\""+s+"\""; :}
+callname  ::= IDENT:i LPAREN callargs:c RPAREN          {: RESULT = i+"("+c+")"; :}
+             |IDENT:i LPAREN RPAREN                     {: RESULT = i+"()"; :}
 ;
-multargs  ::= STRING_LITERAL:s                  {: RESULT = "\""+s+"\""; :}
+callargs     ::= callargs:c COMMA multargs:m            {: RESULT = c+", "+m; :}
+             |STRING_LITERAL:s                          {: RESULT = "\""+s+"\""; :}
+             |fcall_arg:f                                   {: RESULT = f; :}
 ;
-body      ::= returned:r                        {: RESULT = "\treturn "+r+";"; :}
+/* OTHERS */
+multargs  ::= STRING_LITERAL:s                          {: RESULT = "\""+s+"\""; :}
+             |fcall_arg:f                               {: RESULT = f; :}
 ;
-returned  ::= returned:r PLUS concat:c          {: RESULT = r+" + "+c; :}
+body      ::= returned:r                                {: RESULT = "\treturn "+r+";"; :}
+;
+
+returned  ::= returned:r PLUS concat:c                  {: RESULT = r+" + "+c; :}
              |STRING_LITERAL:s                  {: RESULT = "\""+s+"\""; :}
              |IDENT:id                          {: RESULT = id; :}
 ;
-concat    ::= STRING_LITERAL:s                  {: RESULT = "\""+s+"\""; :}
-             |IDENT:id                          {: RESULT = id; :}
+concat    ::= STRING_LITERAL:s                          {: RESULT = "\""+s+"\""; :}
+             |IDENT:id                                  {: RESULT = id; :}
 ;

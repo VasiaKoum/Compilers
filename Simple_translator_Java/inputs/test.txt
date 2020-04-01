@@ -1,13 +1,15 @@
-name(){
+name()  {
     "John"
 }
 
-name2()  {
-    "rr"
+surname() {
+    "Doe"
 }
 
 fullname(first_name, sep, last_name) {
     first_name + sep + last_name
 }
 
-name(rrr)
+name()
+surname()
+fullname(name(), " ", surname())
