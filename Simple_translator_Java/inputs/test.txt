@@ -1,15 +1,19 @@
 name()  {
     if ("rerer")
-    "ererer"
-    else "sdede"
+        if ("rerer")
+            "ererer"
+        else
+            "sdede"
+    else
+        "sdede"
 }
 
 surname(x) {
-    x+x
+    "x+x"
 }
 
 fullname(first_name, sep, last_name) {
-    first_name + sep + last_name
+    "first_name + sep + last_name"
 }
 
 name()

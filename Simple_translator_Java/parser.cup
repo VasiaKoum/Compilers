@@ -15,7 +15,7 @@ terminal String     STRING_LITERAL;        // our scanner provides numbers as st
 
 /*  Non terminals */
 non terminal        begin, fdecl, decl, fcall, declname, body, declargs, returned, concat, call, callname, callargs, multargs, fcall_arg,
-                    ifbody, cond, ifexpr, elsexpr, reqr, pref_rev, type_str;
+                    ifbody, cond, str;
 
 /* Precedence Declarations */
 precedence left     ELSE;
@@ -53,39 +53,46 @@ callname  ::= IDENT:i LPAREN callargs:c RPAREN          {: RESULT = i+"("+c+")";
 callargs     ::= callargs:c COMMA multargs:m            {: RESULT = c+", "+m; :}
              |STRING_LITERAL:s                          {: RESULT = "\""+s+"\""; :}
              |fcall_arg:f                               {: RESULT = f; :}
-             /* |returned:d                                {: RESULT = d; :} */
 ;
 
 /* OTHERS */
 multargs  ::= STRING_LITERAL:s                          {: RESULT = "\""+s+"\""; :}
              |fcall_arg:f                               {: RESULT = f; :}
 ;
-body      ::= returned:r                                {: RESULT = "\treturn "+r+";"; :}
+body      ::= str:s                                     {: RESULT = s; :}
+;
+str       ::= STRING_LITERAL:s                          {: RESULT = "\""+s+"\""; :}
+             |IDENT:i                                   {: RESULT = i; :}
+             /* |str:s concat:c                            {: RESULT = s+c; :} */
+             |ifbody:b                                  {: RESULT = b; :}
+             |fcall_arg:f                               {: RESULT = f; :}
+             |REVERSE str:s                             {: RESULT = s; :}
+;
+/* body      ::= returned:r                                {: RESULT = "\treturn "+r+";"; :}
              |ifbody:i                                  {: RESULT = i; :}
 ;
 returned  ::= returned:r PLUS concat:c                  {: RESULT = r+" + "+c; :}
-             |STRING_LITERAL:s                  {: RESULT = "\""+s+"\""; :}
-             |IDENT:id                          {: RESULT = id; :}
+             |STRING_LITERAL:s                          {: RESULT = "\""+s+"\""; :}
+             |IDENT:id                                  {: RESULT = id; :}
 ;
 concat    ::= STRING_LITERAL:s                          {: RESULT = "\""+s+"\""; :}
              |IDENT:i                                   {: RESULT = i; :}
-;
+; */
 
 /* IF ELSE */
 /* ifbody    ::= IF LPAREN cond:c RPAREN ifexpr:i ELSE elsexpr:e {: RESULT = c+" ? "+i+" : "+e; :} */
-ifbody    ::= IF LPAREN cond:c RPAREN ifexpr:i ELSE elsexpr:e {: RESULT = "if("+c+")\n"+i+""; :}
+ifbody    ::= IF LPAREN cond:c RPAREN body:b1 ELSE body:b2 {: RESULT = "if("+c+")\n"+"return "+b1+"\nelse\nreturn "+b2; :}
 ;
 cond      ::= STRING_LITERAL:s                          {: RESULT = "\""+s+"\""; :}
 
 ;
-ifexpr    ::= STRING_LITERAL:s                          {: RESULT = "\""+s+"\""; :}
+/* ifexpr    ::= STRING_LITERAL:s                          {: RESULT = "\""+s+"\""; :}
 ;
 elsexpr   ::= STRING_LITERAL:s                          {: RESULT = "\""+s+"\""; :}
-;
-
+; */
 
 /* PREFIX & REVERSE */
-reqr      ::= reqr:r pref_rev:p                         {: RESULT = r+" "+p; :}
+/* reqr      ::= reqr:r pref_rev:p                         {: RESULT = r+" "+p; :}
              |pref_rev:p                                {: RESULT = p; :}
 ;
 pref_rev  ::= type_str:t1 PREFIX type_str:t2            {: RESULT = t1+".isPrefix("+t2+")"; :}
@@ -94,4 +101,4 @@ type_str  ::= STRING_LITERAL:s                          {: RESULT = "\""+s+"\"";
              |IDENT:i                                   {: RESULT = i; :}
              |ifbody:ib                                 {: RESULT = ib; :}
              |REVERSE type_str:t                        {: RESULT = "reverse("+t+")"; :}
-;
+; */
