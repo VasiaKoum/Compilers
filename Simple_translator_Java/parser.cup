@@ -15,7 +15,7 @@ terminal String     STRING_LITERAL;        // our scanner provides numbers as st
 
 /*  Non terminals */
 non terminal        begin, fdecl, decl, fcall, declname, body, declargs, returned, concat, call, callname, callargs, multargs, fcall_arg,
-                    ifbody, cond, str, call_str, body_call;
+                    ifbody, cond, str, strfcall, bodyfcall, ifbodyfcall, condfcall;
 
 /* Precedence Declarations */
 precedence left     ELSE;
@@ -50,16 +50,16 @@ call      ::= callname:c                                {: RESULT = c; :}
 callname  ::= IDENT:i LPAREN callargs:c RPAREN          {: RESULT = i+"("+c+")"; :}
              |IDENT:i LPAREN RPAREN                     {: RESULT = i+"()"; :}
 ;
-callargs  ::= callargs:c COMMA body_call:b              {: RESULT = c+", "+b; :}
-             |body_call:b                               {: RESULT = b; :}
+callargs  ::= callargs:c COMMA bodyfcall:b              {: RESULT = c+", "+b; :}
+             |bodyfcall:b                               {: RESULT = b; :}
 ;
-body_call ::= body_call:b PLUS call_str:s               {: RESULT = b+"+"+s; :}
-             |call_str:s                                {: RESULT = s; :}
+bodyfcall ::= bodyfcall:b PLUS strfcall:s               {: RESULT = b+"+"+s; :}
+             |strfcall:s                                {: RESULT = s; :}
 ;
-call_str ::= STRING_LITERAL:s                           {: RESULT = "\""+s+"\""; :}
-             |ifbody:b                                  {: RESULT = b; :}
+strfcall ::= STRING_LITERAL:s                           {: RESULT = "\""+s+"\""; :}
+             |ifbodyfcall:b                             {: RESULT = b; :}
              |fcall_arg:f                               {: RESULT = f; :}
-             |REVERSE call_str:s                        {: RESULT = s; :}
+             |REVERSE strfcall:s                        {: RESULT = s; :}
 ;
 
 /* OTHERS */
@@ -76,10 +76,14 @@ str       ::= STRING_LITERAL:s                          {: RESULT = "\""+s+"\"";
              |REVERSE str:s                             {: RESULT = "reverse "+s; :}
 ;
 
-/* IF ELSE */
-/* ifbody    ::= IF LPAREN cond:c RPAREN ifexpr:i ELSE elsexpr:e {: RESULT = c+" ? "+i+" : "+e; :} */
+/* IF ELSE FOR BODY */
 ifbody    ::= IF LPAREN cond:c RPAREN body:b1 ELSE body:b2 {: RESULT = "if("+c+")\n"+"return "+b1+"\nelse\nreturn "+b2; :}
 ;
-cond      ::= STRING_LITERAL:s                          {: RESULT = "\""+s+"\""; :}
+cond      ::= str:s1 PREFIX str:s2                      {: RESULT = s1+" prefix "+s2; :}
+;
 
+/* IF ELSE FOR FUNCTION CALL */
+ifbodyfcall    ::= IF LPAREN condfcall:c RPAREN bodyfcall:b1 ELSE bodyfcall:b2 {: RESULT = c+" ? "+b1+" : "+b2; :}
+;
+condfcall      ::= strfcall:s1 PREFIX strfcall:s2                      {: RESULT = s1+" prefix "+s2; :}
 ;

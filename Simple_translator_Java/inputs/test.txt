@@ -1,9 +1,9 @@
 name()  {
-    if ("1")
-        if ("2")
+    if ("1" prefix x)
+        if ("2" prefix x)
             "3"
         else
-            if ("4")
+            if ("4" prefix x)
                 fullname(name(name(surname())), " ", surname())
             else
                 reverse reverse reverse x
@@ -19,6 +19,6 @@ fullname(first_name, sep, last_name) {
     first_name + sep + last_name
 }
 
-name()
+name(if ("2" prefix "x") "3" else "3")
 surname(reverse reverse reverse "x")
 fullname(name(name(surname())), " ", surname())
