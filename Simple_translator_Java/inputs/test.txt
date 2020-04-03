@@ -12,13 +12,13 @@ name()  {
 }
 
 surname(x) {
-    "x+x"
+    x+name("e"+name()+"vasia")+"vasia"
 }
 
 fullname(first_name, sep, last_name) {
-    "first_name + sep + last_name"
+    first_name + sep + last_name
 }
 
 name()
-surname()
+surname(reverse reverse reverse "x")
 fullname(name(name(surname())), " ", surname())
