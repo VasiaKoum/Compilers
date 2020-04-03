@@ -15,7 +15,7 @@ terminal String     STRING_LITERAL;        // our scanner provides numbers as st
 
 /*  Non terminals */
 non terminal        begin, fdecl, decl, fcall, declname, body, declargs, returned, concat, call, callname, callargs, multargs, fcall_arg,
-                    ifbody, cond, str;
+                    ifbody, cond, str, call_str;
 
 /* Precedence Declarations */
 precedence left     ELSE;
@@ -50,9 +50,16 @@ call      ::= callname:c                                {: RESULT = c; :}
 callname  ::= IDENT:i LPAREN callargs:c RPAREN          {: RESULT = i+"("+c+")"; :}
              |IDENT:i LPAREN RPAREN                     {: RESULT = i+"()"; :}
 ;
-callargs     ::= callargs:c COMMA multargs:m            {: RESULT = c+", "+m; :}
-             |STRING_LITERAL:s                          {: RESULT = "\""+s+"\""; :}
+callargs  ::= callargs:c COMMA call_str:cs               {: RESULT = c+", "+cs; :}
+             |call_str:cs                               {: RESULT = cs; :}
+             /* |STRING_LITERAL:s                          {: RESULT = "\""+s+"\""; :}
+             |fcall_arg:f                               {: RESULT = f; :} */
+;
+call_str ::= STRING_LITERAL:s                           {: RESULT = "\""+s+"\""; :}
+             /* |str:s concat:c                            {: RESULT = s+c; :} */
+             |ifbody:b                                  {: RESULT = b; :}
              |fcall_arg:f                               {: RESULT = f; :}
+             |REVERSE call_str:s                        {: RESULT = s; :}
 ;
 
 /* OTHERS */
@@ -66,7 +73,7 @@ str       ::= STRING_LITERAL:s                          {: RESULT = "\""+s+"\"";
              /* |str:s concat:c                            {: RESULT = s+c; :} */
              |ifbody:b                                  {: RESULT = b; :}
              |fcall_arg:f                               {: RESULT = f; :}
-             |REVERSE str:s                             {: RESULT = s; :}
+             |REVERSE str:s                             {: RESULT = "reverse "+s; :}
 ;
 /* body      ::= returned:r                                {: RESULT = "\treturn "+r+";"; :}
              |ifbody:i                                  {: RESULT = i; :}

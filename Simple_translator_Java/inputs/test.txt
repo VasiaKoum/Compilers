@@ -1,11 +1,14 @@
 name()  {
-    if ("rerer")
-        if ("rerer")
-            "ererer"
+    if ("1")
+        if ("2")
+            "3"
         else
-            "sdede"
+            if ("4")
+                fullname(name(name(surname())), " ", surname())
+            else
+                reverse reverse reverse x
     else
-        "sdede"
+        "5"
 }
 
 surname(x) {
