@@ -1,7 +1,7 @@
-name()  {
-    if ("1" prefix x)
-        if ("2" prefix x)
-            "3"
+name(x,y)  {
+    if (x prefix "1")
+        if ("y" prefix x)
+            x
         else
             if ("4" prefix x)
                 fullname(name(name(surname())), " ", surname())
@@ -19,6 +19,16 @@ fullname(first_name, sep, last_name) {
     first_name + sep + last_name
 }
 
-name(if ("2" prefix "x") "3" else "3")
+cond_repeat(c, x) {
+    if (c prefix "yes")
+        if("yes" prefix c)
+            repeat(x)
+        else
+            x
+    else
+        x
+}
+
+name(surname(), surname())
 surname(reverse reverse reverse "x")
 fullname(name(name(surname())), " ", surname())

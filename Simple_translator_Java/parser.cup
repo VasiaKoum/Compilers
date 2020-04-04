@@ -14,8 +14,9 @@ terminal            PLUS, LPAREN, RPAREN, LBRACK, RBRACK, COMMA, IF, ELSE, PREFI
 terminal String     STRING_LITERAL;        // our scanner provides numbers as strings
 
 /*  Non terminals */
-non terminal        begin, fdecl, decl, fcall, declname, body, declargs, returned, concat, call, callname, callargs, multargs, fcall_arg,
-                    ifbody, cond, str, strfcall, bodyfcall, ifbodyfcall, condfcall;
+non terminal        begin, fdecl, decl, fcall, declname, body, declargs, callname, callargs,
+                    ifbody, cond, str, strfcall, bodyfcall, ifbodyfcall, condfcall, callnameinf, callargsinf,
+                    bodyreturn, strreturn;
 
 /* Precedence Declarations */
 precedence left     ELSE;
@@ -29,7 +30,7 @@ begin     ::= fdecl:fd fcall:fc                         {: System.out.println("p
 fdecl     ::= fdecl:fd decl:d                           {: RESULT = fd+"\n\n"+d; :}
              |decl:d                                    {: RESULT = d; :}
 ;
-decl      ::= declname:d body:b RBRACK                  {: RESULT = "public static String "+d+"{\n"+b+"\n}"; :}
+decl      ::= declname:d body:b RBRACK                  {: RESULT = "public static String "+d+"{\n"+"\treturn "+b+"\n}"; :}
 ;
 declname  ::= IDENT:i LPAREN declargs:d RPAREN LBRACK   {: RESULT = i+"("+d+")"; :}
              |IDENT:i LPAREN RPAREN LBRACK              {: RESULT = i+"()"; :}
@@ -39,13 +40,8 @@ declargs  ::= declargs:d COMMA IDENT:i                  {: RESULT = d+", "+i; :}
 ;
 
 /* FUNCTION CALL */
-fcall     ::= call:c fcall:fc                           {: RESULT = "\tSystem.out.println("+c+");\n"+fc; :}
-             |call:c                                    {: RESULT = "\tSystem.out.println("+c+");"; :}
-;
-fcall_arg ::= call:c fcall:fc                           {: RESULT = c+""+fc; :}
-             |call:c                                    {: RESULT = c; :}
-;
-call      ::= callname:c                                {: RESULT = c; :}
+fcall     ::= callname:c fcall:fc                       {: RESULT = "\tSystem.out.println("+c+");\n"+fc; :}
+             |callname:c                                {: RESULT = "\tSystem.out.println("+c+");"; :}
 ;
 callname  ::= IDENT:i LPAREN callargs:c RPAREN          {: RESULT = i+"("+c+")"; :}
              |IDENT:i LPAREN RPAREN                     {: RESULT = i+"()"; :}
@@ -58,32 +54,49 @@ bodyfcall ::= bodyfcall:b PLUS strfcall:s               {: RESULT = b+"+"+s; :}
 ;
 strfcall ::= STRING_LITERAL:s                           {: RESULT = "\""+s+"\""; :}
              |ifbodyfcall:b                             {: RESULT = b; :}
-             |fcall_arg:f                               {: RESULT = f; :}
+             |callname:f                                {: RESULT = f; :}
              |REVERSE strfcall:s                        {: RESULT = s; :}
 ;
 
 /* OTHERS */
-multargs  ::= STRING_LITERAL:s                          {: RESULT = "\""+s+"\""; :}
-             |fcall_arg:f                               {: RESULT = f; :}
-;
 body      ::= body:b PLUS str:s                         {: RESULT = b+"+"+s; :}
              |str:s                                     {: RESULT = s; :}
 ;
 str       ::= STRING_LITERAL:s                          {: RESULT = "\""+s+"\""; :}
              |IDENT:i                                   {: RESULT = i; :}
              |ifbody:b                                  {: RESULT = b; :}
-             |fcall_arg:f                               {: RESULT = f; :}
+             |callnameinf:f                             {: RESULT = f; :}
              |REVERSE str:s                             {: RESULT = "reverse "+s; :}
 ;
 
-/* IF ELSE FOR BODY */
-ifbody    ::= IF LPAREN cond:c RPAREN body:b1 ELSE body:b2 {: RESULT = "if("+c+")\n"+"return "+b1+"\nelse\nreturn "+b2; :}
+/* FUNCTION IN BODY FUNCTION ALLOWS ID */
+callnameinf  ::= IDENT:i LPAREN callargsinf:c RPAREN     {: RESULT = i+"("+c+")"; :}
+             |IDENT:i LPAREN RPAREN                      {: RESULT = i+"()"; :}
 ;
-cond      ::= str:s1 PREFIX str:s2                      {: RESULT = s1+" prefix "+s2; :}
+callargsinf  ::= callargsinf:c COMMA body:b              {: RESULT = c+", "+b; :}
+             |body:b                                     {: RESULT = b; :}
+;
+
+
+/* IF ELSE FOR BODY */
+ifbody    ::= IF LPAREN cond:c RPAREN
+                bodyreturn:b1 ELSE bodyreturn:b2          {: RESULT = "\tif("+c+")\n"+"\t\t"+b1+"\n\telse\n\t\t"+b2; :}
+;
+cond        ::= str:s1 PREFIX str:s2                      {: RESULT = s1+" prefix "+s2; :}
+;
+bodyreturn  ::= bodyreturn:b PLUS strreturn:s             {: RESULT = b+"+"+s; :}
+             |strreturn:s                                 {: RESULT = s; :}
+;
+strreturn    ::= STRING_LITERAL:s                          {: RESULT = "return "+"\""+s+"\""; :}
+             |IDENT:i                                   {: RESULT = "return "+i; :}
+             |ifbody:b                                  {: RESULT = b; :}
+             |callnameinf:f                             {: RESULT = "return "+f; :}
+             |REVERSE str:s                             {: RESULT = "return reverse "+s; :}
 ;
 
 /* IF ELSE FOR FUNCTION CALL */
-ifbodyfcall    ::= IF LPAREN condfcall:c RPAREN bodyfcall:b1 ELSE bodyfcall:b2 {: RESULT = c+" ? "+b1+" : "+b2; :}
+ifbodyfcall    ::= IF LPAREN condfcall:c RPAREN
+                    bodyfcall:b1 ELSE bodyfcall:b2      {: RESULT = c+" ? "+b1+" : "+b2; :}
 ;
-condfcall      ::= strfcall:s1 PREFIX strfcall:s2                      {: RESULT = s1+" prefix "+s2; :}
+condfcall      ::= strfcall:s1 PREFIX strfcall:s2       {: RESULT = s1+" prefix "+s2; :}
 ;
