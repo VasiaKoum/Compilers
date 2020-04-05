@@ -11,6 +11,7 @@ public static String reversefunc(String input) {
 public static void main(String[] args){
 	System.out.println(newf());
 	System.out.println(name(surname("x"), surname("y")));
+	System.out.println("yes!".startsWith("yes") ? "hellooo" : ("its me")+("yes!".startsWith("yes") ? "hellooo" : "its me"));
 	System.out.println(surname("x"));
 	System.out.println(fullname(name(name(surname("w"), "i"), "p"), " ", surname("v")));
 }

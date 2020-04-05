@@ -50,7 +50,7 @@ callname  ::= IDENT:i LPAREN callargs:c RPAREN          {: RESULT = i+"("+c+")";
 callargs  ::= callargs:c COMMA bodyfcall:b              {: RESULT = c+", "+b; :}
              |bodyfcall:b                               {: RESULT = b; :}
 ;
-bodyfcall ::= bodyfcall:b PLUS strfcall:s               {: RESULT = b+"+"+s; :}
+bodyfcall ::= bodyfcall:b PLUS strfcall:s               {: RESULT = "("+b+")"+"+("+s+")"; :}
              |strfcall:s                                {: RESULT = s; :}
 ;
 strfcall ::= STRING_LITERAL:s                           {: RESULT = "\""+s+"\""; :}
