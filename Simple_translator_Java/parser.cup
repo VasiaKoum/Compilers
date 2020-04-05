@@ -56,7 +56,7 @@ bodyfcall ::= bodyfcall:b PLUS strfcall:s               {: RESULT = "("+b+")"+"+
 strfcall ::= STRING_LITERAL:s                           {: RESULT = "\""+s+"\""; :}
              |ifbodyfcall:b                             {: RESULT = b; :}
              |callname:f                                {: RESULT = f; :}
-             |REVERSE strfcall:s                        {: RESULT = s; :}
+             |REVERSE strfcall:s                        {: RESULT = "reversefunc("+s+")"; :}
 ;
 
 /* OTHERS */

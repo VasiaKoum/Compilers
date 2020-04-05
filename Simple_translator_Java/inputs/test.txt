@@ -36,5 +36,6 @@ newf(){
 newf()
 name(surname("x"), surname("y"))
 if ("yes" prefix "yes!") "hellooo" else "its me" + if ("yes" prefix "yes!") "hellooo" else "its me"
+reverse "vasiaa"
 surname(reverse reverse reverse "x")
 fullname(name(name(surname("w"), "i"), "p"), " ", surname("v"))
