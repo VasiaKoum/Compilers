@@ -1,10 +1,10 @@
 name(x,y)  {
-    if (x prefix "1")
+    if (x prefix cond_repeat("y", "y"))
         if ("y" prefix x)
             x
         else
             if ("4" prefix x)
-                fullname(name(name(surname())), " ", surname())
+                fullname(name(name(surname(reverse "compilers"), "u"), "id"), " ", surname(reverse reverse "smara"))
             else
                 reverse reverse reverse x
     else
@@ -12,7 +12,7 @@ name(x,y)  {
 }
 
 surname(x) {
-    x+name("e"+name()+"vasia")+"vasia"
+    x+name("e"+name("r", "tree")+"vasia", x)+"vasia"
 }
 
 fullname(first_name, sep, last_name) {
@@ -22,13 +22,18 @@ fullname(first_name, sep, last_name) {
 cond_repeat(c, x) {
     if (c prefix "yes")
         if("yes" prefix c)
-            repeat(x)
+            surname(x)
         else
             x
     else
         x
 }
 
-name(surname(), surname())
+newf(){
+    if ("F" prefix "Fox") "cool" else "error" + if ("B" prefix "Bear") "nice" else "not nice"
+}
+
+newf()
+name(surname("x"), surname("y"))
 surname(reverse reverse reverse "x")
-fullname(name(name(surname())), " ", surname())
+fullname(name(name(surname("w"), "i"), "p"), " ", surname("v"))
