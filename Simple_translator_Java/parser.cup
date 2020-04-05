@@ -18,7 +18,9 @@ non terminal        begin, fdecl, decl, fcall, declname, body, declargs, callnam
                     ifbody, cond, str, strfcall, bodyfcall, ifbodyfcall, condfcall, callnameinf, callargsinf;
 
 /* Precedence Declarations */
-precedence left     REVERSE, PLUS, IF;
+precedence left     IF;
+precedence left     PLUS;
+precedence left     REVERSE;
 
 /* The Grammar Rules */
 begin     ::= fdecl:fd fcall:fc                         {: System.out.println("public static void main(String[] args){\n"+fc+"\n}\n");
@@ -39,8 +41,8 @@ declargs  ::= declargs:d COMMA IDENT:i                  {: RESULT = d+", "+"Stri
 ;
 
 /* FUNCTION CALL */
-fcall     ::= callname:c fcall:fc                       {: RESULT = "\tSystem.out.println("+c+");\n"+fc; :}
-             |callname:c                                {: RESULT = "\tSystem.out.println("+c+");"; :}
+fcall     ::= bodyfcall:b fcall:fc                      {: RESULT = "\tSystem.out.println("+b+");\n"+fc; :}
+             |bodyfcall:b                               {: RESULT = "\tSystem.out.println("+b+");"; :}
 ;
 callname  ::= IDENT:i LPAREN callargs:c RPAREN          {: RESULT = i+"("+c+")"; :}
              |IDENT:i LPAREN RPAREN                     {: RESULT = i+"()"; :}
@@ -69,24 +71,24 @@ str       ::= STRING_LITERAL:s                          {: RESULT = "\""+s+"\"";
 ;
 
 /* FUNCTION IN BODY FUNCTION ALLOWS ID */
-callnameinf  ::= IDENT:i LPAREN callargsinf:c RPAREN     {: RESULT = i+"("+c+")"; :}
-             |IDENT:i LPAREN RPAREN                      {: RESULT = i+"()"; :}
+callnameinf  ::= IDENT:i LPAREN callargsinf:c RPAREN    {: RESULT = i+"("+c+")"; :}
+             |IDENT:i LPAREN RPAREN                     {: RESULT = i+"()"; :}
 ;
-callargsinf  ::= callargsinf:c COMMA body:b              {: RESULT = c+", "+b; :}
-             |body:b                                     {: RESULT = b; :}
+callargsinf  ::= callargsinf:c COMMA body:b             {: RESULT = c+", "+b; :}
+             |body:b                                    {: RESULT = b; :}
 ;
 
 
 /* IF ELSE FOR BODY */
-ifbody    ::= IF LPAREN cond:c RPAREN
-                body:b1 ELSE body:b2                      {: RESULT = c+" ? "+b1+" : "+b2; :}
+ifbody       ::= IF LPAREN cond:c RPAREN
+                body:b1 ELSE body:b2                    {: RESULT = c+" ? "+b1+" : "+b2; :}
 ;
-cond        ::= str:s1 PREFIX str:s2                      {: RESULT = s2+".startsWith("+s1+")";:}
+cond         ::= str:s1 PREFIX str:s2                   {: RESULT = s2+".startsWith("+s1+")";:}
 ;
 
 /* IF ELSE FOR FUNCTION CALL */
-ifbodyfcall    ::= IF LPAREN condfcall:c RPAREN
+ifbodyfcall  ::= IF LPAREN condfcall:c RPAREN
                     bodyfcall:b1 ELSE bodyfcall:b2      {: RESULT = c+" ? "+b1+" : "+b2; :}
 ;
-condfcall      ::= strfcall:s1 PREFIX strfcall:s2       {: RESULT = s2+".startsWith("+s1+")"; :}
+condfcall    ::= strfcall:s1 PREFIX strfcall:s2         {: RESULT = s2+".startsWith("+s1+")"; :}
 ;
