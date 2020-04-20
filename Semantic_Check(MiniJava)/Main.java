@@ -18,7 +18,7 @@ class Main{
             	Goal root = parser.Goal();
             	System.err.println("Program parsed successfully!");
 
-            	SymbolTable symboltable = new SymbolTable();
+				SymbolTable symboltable = new SymbolTable();
             	root.accept(symboltable, null);
 			}
 			catch(ParseException ex){

@@ -6,11 +6,14 @@ import java.io.*;
 public class SymbolTable extends GJDepthFirst<String, LinkedHashMap>{
     LinkedHashMap<String, Classes> mapclass;
     static int varoffset;
-    static int methoffset;
+    static int methodoffset;
+    static String classname;
+    static String methodname;
 
     public SymbolTable(){
         mapclass = new LinkedHashMap<String, Classes>();
-        varoffset = 0; methoffset = 0;
+        // this.varoffset = 0; this.methodoffset = 0;
+        // this.classname = ""; this.methodname = "";
     }
 
     public String visit(NodeToken n, LinkedHashMap argu) { return n.toString(); }
@@ -29,12 +32,11 @@ public class SymbolTable extends GJDepthFirst<String, LinkedHashMap>{
           // throw new RuntimeException();
       }
       else{
-          Variables putvars = new Variables(id, type, "");
-          System.out.println("Declare:["+id+"]"+" ["+type+"]"+" ["+putvars.offset+"]");
+          Variables putvars = new Variables(id, type);
+          System.out.println(type+" "+id+" -> "+putvars.offset);
           argu.put(id, putvars);
       }
       return _ret;
-      // System.out.println(argu+type+" "+id);
    }
 
    /**
@@ -71,11 +73,44 @@ public class SymbolTable extends GJDepthFirst<String, LinkedHashMap>{
           // throw new RuntimeException();
       }
       else{
-          // System.out.println(name.getClass().getName());
+          System.out.println(name+":");
           Classes putclass = new Classes(name);
           mapclass.put(name, putclass);
           n.f3.accept(this, putclass.vars);
           n.f4.accept(this, putclass.methods);
+      }
+      return _ret;
+   }
+
+   /**
+    * f0 -> "public"
+    * f1 -> Type()
+    * f2 -> Identifier()
+    * f3 -> "("
+    * f4 -> ( FormalParameterList() )?
+    * f5 -> ")"
+    * f6 -> "{"
+    * f7 -> ( VarDeclaration() )*
+    * f8 -> ( Statement() )*
+    * f9 -> "return"
+    * f10 -> Expression()
+    * f11 -> ";"
+    * f12 -> "}"
+    */
+   public String visit(MethodDeclaration n, LinkedHashMap argu) {
+      String _ret=null;
+      String name = n.f2.accept(this, argu);
+      String type = n.f1.accept(this, argu);
+      if (argu.get(name) != null){
+          System.out.println("Already declared!");
+          // throw new RuntimeException();
+      }
+      else{
+          System.out.println(name+":");
+          Methods putclass = new Methods(name, classname, type);
+          argu.put(name, putclass);
+          n.f7.accept(this, putclass.vars);
+          // n.f4.accept(this, putclass.methods);
       }
       return _ret;
    }
@@ -100,5 +135,15 @@ public class SymbolTable extends GJDepthFirst<String, LinkedHashMap>{
       return _ret;
    }
 
-
+   // public int getlastvaroffset(String classname, LinkedHashMap argu){
+   //     Classes thisclass = mapclass.get(classname);
+   //     if ( thisclass != null){ return thisclass.varoffset; }
+   //     else { return 0; }
+   // }
+   //
+   // public int getlastmethodoffset(String methodname, LinkedHashMap argu){
+   //     Classes thismethod = mapclass.get(methodname);
+   //     if ( thismethod != null){ return thismethod.methodoffset; }
+   //     else { return 0; }
+   // }
 }
