@@ -1,5 +1,6 @@
 import syntaxtree.*;
-// import visitor.*;
+import visitor.*;
+import java.util.*;
 import java.io.*;
 
 class Main{
@@ -17,8 +18,8 @@ class Main{
             	Goal root = parser.Goal();
             	System.err.println("Program parsed successfully!");
 
-            	EvalVisitor eval = new EvalVisitor();
-            	root.accept(eval, null);
+            	SymbolTable symboltable = new SymbolTable();
+            	root.accept(symboltable, null);
 			}
 			catch(ParseException ex){
 				System.out.println(ex.getMessage());
