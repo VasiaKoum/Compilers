@@ -38,6 +38,6 @@ class C{
     }
 }
 
-class B extends A{
+class B extends Avas{
     int othernum;
 }

@@ -3,106 +3,96 @@ import syntaxtree.*;
 import java.util.*;
 import java.io.*;
 
-public class VisitorSymbolTable extends GJDepthFirst<String, String>{
+public class VisitorSymbolTable extends GJDepthFirst<String, LinkedHashMap<String, Variables> >{
     SymbolTable symboltable;
 
     public VisitorSymbolTable(SymbolTable st){
         symboltable = st;
     }
 
-    public String visit(NodeToken n, String argu) { return n.toString(); }
+    public String visit(MainClass n, LinkedHashMap<String, Variables> argu) {
+       String _ret=null;
+       String nameclass = n.f1.accept(this, argu);
+       String name = "main";
+       if (symboltable.classes.get(name) != null){
+           System.out.println("Already declared -> class"+name);
+           // throw new RuntimeException();
+       }
+       else{
+           System.out.println(name+":");
+           symboltable.classes.put(name, new Classes(name, null));
+           symboltable.currentclass = name;
+           symboltable.classmethod = true;
+           n.f14.accept(this, symboltable.classes.get(name).vars);
+       }
+       return _ret;
+    }
 
-    /**
-    * f0 -> Type()
-    * f1 -> Identifier()
-    * f2 -> ";"
-    */
-   public String visit(VarDeclaration n, String argu) {
+    public String visit(NodeToken n, LinkedHashMap<String, Variables> argu) { return n.toString(); }
+
+    public String visit(VarDeclaration n, LinkedHashMap<String, Variables> argu) {
       String _ret=null;
       String type = n.f0.accept(this, argu);
-      String id = n.f1.accept(this, argu);
-      LinkedHashMap<String, Variables> inscope;
-      if (symboltable.classmethod) inscope = symboltable.classes.get(symboltable.currentclass).vars;
-      else inscope = symboltable.methods.get(symboltable.currentmethod).vars;
-
-      if (inscope.get(id) != null){
-          System.out.println("Already declared!");
+      String name = n.f1.accept(this, argu);
+      if (argu.get(name) != null){
+          System.out.println("Already declared -> "+type+" "+name);
           // throw new RuntimeException();
       }
       else{
-          // System.out.println(type+" "+id+" -> "+putvars.offset);
-          if (symboltable.classmethod) System.out.println("in scope: "+symboltable.currentclass+" "+id+" "+type);
-          else System.out.println("in scope: "+symboltable.currentmethod+" "+id+" "+type);
-          inscope.put(id, new Variables(id, type));
+          System.out.println("\t"+type+" "+name);
+          argu.put(name, new Variables(name, type));
       }
       return _ret;
-   }
+    }
 
-   /**
-    * f0 -> "boolean"
-    * f1 -> "["
-    * f2 -> "]"
-    */
-   public String visit(BooleanArrayType n, String argu) {
+    public String visit(BooleanArrayType n, LinkedHashMap<String, Variables> argu) {
       return "boolean[]";
-   }
+    }
 
-   /**
-    * f0 -> "int"
-    * f1 -> "["
-    * f2 -> "]"
-    */
-   public String visit(IntegerArrayType n, String argu) {
+    public String visit(IntegerArrayType n, LinkedHashMap<String, Variables> argu) {
       return "int[]";
-   }
+    }
 
-   /**
-    * f0 -> "class"
-    * f1 -> Identifier()
-    * f2 -> "{"
-    * f3 -> ( VarDeclaration() )*
-    * f4 -> ( MethodDeclaration() )*
-    * f5 -> "}"
-    */
-   public String visit(ClassDeclaration n, String argu) {
+    public String visit(ClassDeclaration n, LinkedHashMap<String, Variables> argu) {
       String _ret=null;
       String name = n.f1.accept(this, argu);
       if (symboltable.classes.get(name) != null){
-          System.out.println("Already declared!");
+          System.out.println("Already declared -> class"+name);
           // throw new RuntimeException();
       }
       else{
           System.out.println(name+":");
-          symboltable.classes.put(name, new Classes(name));
+          symboltable.classes.put(name, new Classes(name, null));
           symboltable.currentclass = name;
           symboltable.classmethod = true;
-          n.f3.accept(this, argu);
+          n.f3.accept(this, symboltable.classes.get(name).vars);
           n.f4.accept(this, argu);
       }
+      System.out.println("--------------------------------");
       return _ret;
-   }
+    }
 
-   /**
-    * f0 -> "public"
-    * f1 -> Type()
-    * f2 -> Identifier()
-    * f3 -> "("
-    * f4 -> ( FormalParameterList() )?
-    * f5 -> ")"
-    * f6 -> "{"
-    * f7 -> ( VarDeclaration() )*
-    * f8 -> ( Statement() )*
-    * f9 -> "return"
-    * f10 -> Expression()
-    * f11 -> ";"
-    * f12 -> "}"
-    */
-   public String visit(MethodDeclaration n, String argu) {
+    public String visit(FormalParameter n, LinkedHashMap<String, Variables> argu) {
+       String _ret=null;
+       String name = n.f1.accept(this, argu);
+       String type = n.f0.accept(this, argu);
+       if (argu.get(name) != null){
+           System.out.println("Already declared -> "+type+" "+name);
+           // throw new RuntimeException();
+       }
+       else{
+           System.out.println("\t["+type+" "+name+"]");
+           argu.put(name, new Variables(name, type));
+       }
+       return _ret;
+    }
+
+    public String visit(MethodDeclaration n, LinkedHashMap<String, Variables> argu) {
       String _ret=null;
       String name = n.f2.accept(this, argu);
       String type = n.f1.accept(this, argu);
       if (symboltable.methods.get(name) != null){
-          System.out.println("Already declared!");
+          System.out.println("Already declared -> function "+type+" "+name);
           // throw new RuntimeException();
       }
       else{
@@ -110,28 +100,36 @@ public class VisitorSymbolTable extends GJDepthFirst<String, String>{
           symboltable.currentmethod = name;
           symboltable.classmethod = false;
           symboltable.methods.put(name, new Methods(name, symboltable.currentclass, type));
-          n.f7.accept(this, argu);
+          n.f4.accept(this, symboltable.methods.get(name).vars);
+          n.f7.accept(this, symboltable.methods.get(name).args);
       }
       return _ret;
-   }
+    }
 
-   /**
-    * f0 -> "class"
-    * f1 -> Identifier()
-    * f2 -> "extends"
-    * f3 -> Identifier()
-    * f4 -> "{"
-    * f5 -> ( VarDeclaration() )*
-    * f6 -> ( MethodDeclaration() )*
-    * f7 -> "}"
-    */
-   // public String visit(ClassExtendsDeclaration n, String argu) {
-   //    String _ret=null;
-   //    String name, parentname;
-   //    name = n.f1.accept(this, argu);
-   //    // parentname = n.f3.accept(this, argu);
-   //    // n.f5.accept(this, name+" :: "+parentname+" :: ");
-   //    // n.f6.accept(this, name+" :: "+parentname+" :: ");
-   //    return _ret;
-   // }
+    public String visit(ClassExtendsDeclaration n, LinkedHashMap<String, Variables> argu) {
+      String _ret=null;
+      String name, parentname;
+      name = n.f1.accept(this, argu);
+      parentname = n.f3.accept(this, argu);
+      if (symboltable.classes.get(name) != null){
+          System.out.println("Already declared -> class"+name);
+          // throw new RuntimeException();
+      }
+      else{
+          if (symboltable.classes.get(parentname) == null){
+              System.out.println("Parent class doesn't exist -> class"+parentname);
+              // throw new RuntimeException();
+          }
+          else{
+              System.out.println(parentname+":"+name+":");
+              symboltable.classes.put(name, new Classes(name, parentname));
+              symboltable.currentclass = name;
+              symboltable.classmethod = true;
+              n.f5.accept(this, symboltable.classes.get(name).vars);
+              n.f6.accept(this, argu);
+          }
+      }
+      System.out.println("--------------------------------");
+      return _ret;
+    }
 }

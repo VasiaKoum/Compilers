@@ -19,9 +19,13 @@ class Main{
             	System.err.println("Program parsed successfully!");
 
 				SymbolTable symboltable = new SymbolTable();
-            	
+				SymbolTable finalsymboltable = new SymbolTable();
+
 				VisitorSymbolTable visitorsymboltable = new VisitorSymbolTable(symboltable);
 				root.accept(visitorsymboltable, null);
+
+				TypeChecking typechecking = new TypeChecking(symboltable, finalsymboltable);
+				// typechecking.IterateHashMap();
 			}
 			catch(ParseException ex){
 				System.out.println(ex.getMessage());
