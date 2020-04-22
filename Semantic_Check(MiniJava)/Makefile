@@ -7,7 +7,7 @@ c_all:
 	javac Main.java
 
 compile:
-	javac SymbolTable.java
+	javac VisitorSymbolTable.java
 	javac Main.java
 
 clean:

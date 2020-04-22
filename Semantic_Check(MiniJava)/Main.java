@@ -19,7 +19,9 @@ class Main{
             	System.err.println("Program parsed successfully!");
 
 				SymbolTable symboltable = new SymbolTable();
-            	root.accept(symboltable, null);
+            	
+				VisitorSymbolTable visitorsymboltable = new VisitorSymbolTable(symboltable);
+				root.accept(visitorsymboltable, null);
 			}
 			catch(ParseException ex){
 				System.out.println(ex.getMessage());

@@ -6,7 +6,6 @@ class Methods{
     String name;
     String classpar;
     String typevar;
-    LinkedHashMap<String, Variables> args_vars;
     LinkedHashMap<String, Variables> vars;
     int offset;
 
@@ -14,9 +13,8 @@ class Methods{
         this.name = nameinput;
         this.classpar = classinput;
         this.typevar = typeinput;
-        this.args_vars = new LinkedHashMap<String, Variables>();
         this.vars = new LinkedHashMap<String, Variables>();
-        SymbolTable.methodoffset+=8; offset = SymbolTable.methodoffset;
-        SymbolTable.methodname = nameinput;
+        // SymbolTable.methodoffset+=8; offset = SymbolTable.methodoffset;
+        // SymbolTable.methodname = nameinput;
     }
 }

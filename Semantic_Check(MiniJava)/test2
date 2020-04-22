@@ -26,7 +26,7 @@ class C{
     int[] arr;
     boolean bool;
     int x;
-    int x;
+    int vasia;
 
     public int func(int num){
         int num_aux;
