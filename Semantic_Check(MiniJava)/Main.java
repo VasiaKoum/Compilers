@@ -24,7 +24,10 @@ class Main{
 				VisitorSymbolTable visitorsymboltable = new VisitorSymbolTable(symboltable);
 				root.accept(visitorsymboltable, null);
 
+				System.out.println("TYPE-CHECKING:");
 				TypeChecking typechecking = new TypeChecking(symboltable, finalsymboltable);
+				root.accept(typechecking, null);
+				System.err.println("Program compiled successfully!");
 				// typechecking.IterateHashMap();
 			}
 			catch(ParseException ex){

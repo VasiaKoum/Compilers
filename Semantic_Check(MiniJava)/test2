@@ -8,14 +8,13 @@ class A{
     int num;
     int[] arr;
     boolean bool;
-    int x;
-    int x;
 
     public int func(int num){
         int num_aux;
         A obj;
+        obj = num_aux;
         {
-        x=2;
+            x=2;
         }
         return 2;
     }
@@ -24,20 +23,19 @@ class A{
 class C{
     int num;
     int[] arr;
-    boolean bool;
-    int x;
+    boolean boolis;
     int vasia;
 
-    public int func(int num){
+    public int func2(int num){
         int num_aux;
         A obj;
         {
-        x=2;
+            x=2;
         }
         return 2;
     }
 }
 
-class B extends Avas{
+class B extends A{
     int othernum;
 }
