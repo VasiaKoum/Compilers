@@ -4,6 +4,6 @@ Semantic_Check(MiniJava)/visitor/
 Semantic_Check(MiniJava)/MiniJavaParser*
 Semantic_Check(MiniJava)/JavaCharStream*
 Semantic_Check(MiniJava)/JTBToolkit*
-Semantic_Check(MiniJava)/ParseExceprion*
+Semantic_Check(MiniJava)/ParseException*
 Semantic_Check(MiniJava)/Token*
 Semantic_Check(MiniJava)/*.class
