@@ -20,8 +20,9 @@ public class VisitorSymbolTable extends GJDepthFirst<String, LinkedHashMap<Strin
        }
        else{
            // System.out.println(name+":");
-           symboltable.classes.put(name, new Classes(name, null));
-           symboltable.currentclass = name;
+           Classes addClass = new Classes(name, null);
+           symboltable.classes.put(name, addClass);
+           symboltable.currentclass = addClass;
            symboltable.classmethod = true;
            n.f14.accept(this, symboltable.classes.get(name).vars);
        }
@@ -62,8 +63,9 @@ public class VisitorSymbolTable extends GJDepthFirst<String, LinkedHashMap<Strin
       }
       else{
           // System.out.println(name+":");
-          symboltable.classes.put(name, new Classes(name, null));
-          symboltable.currentclass = name;
+          Classes addClass = new Classes(name, null);
+          symboltable.classes.put(name, addClass);
+          symboltable.currentclass = addClass;
           symboltable.classmethod = true;
           n.f3.accept(this, symboltable.classes.get(name).vars);
           n.f4.accept(this, argu);
@@ -90,17 +92,19 @@ public class VisitorSymbolTable extends GJDepthFirst<String, LinkedHashMap<Strin
       String _ret=null;
       String name = n.f2.accept(this, argu);
       String type = n.f1.accept(this, argu);
-      if (symboltable.methods.get(name) != null){
+      String checkmethod = symboltable.currentclass.name+name;
+      if (symboltable.methods.get(checkmethod) != null){
           System.out.println("Already declared -> function "+type+" "+name);
           System.exit(0);
       }
       else{
           // System.out.println(name+":");
-          symboltable.currentmethod = name;
+          Methods addMethod = new Methods(name, symboltable.currentclass.name, type);
+          symboltable.currentmethod = addMethod;
+          symboltable.methods.put(checkmethod, addMethod);
           symboltable.classmethod = false;
-          symboltable.methods.put(name, new Methods(name, symboltable.currentclass, type));
-          n.f4.accept(this, symboltable.methods.get(name).args);
-          n.f7.accept(this, symboltable.methods.get(name).vars);
+          n.f4.accept(this, symboltable.methods.get(checkmethod).args);
+          n.f7.accept(this, symboltable.methods.get(checkmethod).vars);
       }
       return _ret;
     }
@@ -121,8 +125,9 @@ public class VisitorSymbolTable extends GJDepthFirst<String, LinkedHashMap<Strin
           }
           else{
               // System.out.println(parentname+":"+name+":");
-              symboltable.classes.put(name, new Classes(name, parentname));
-              symboltable.currentclass = name;
+              Classes addClass = new Classes(name, parentname);
+              symboltable.classes.put(name, addClass);
+              symboltable.currentclass = addClass;
               symboltable.classmethod = true;
               n.f5.accept(this, symboltable.classes.get(name).vars);
               n.f6.accept(this, argu);

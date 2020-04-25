@@ -10,8 +10,7 @@ class Classes{
 
     public Classes(String nameinput, String parentinput){
         this.name = nameinput;
-        if (parentinput == null) this.parent = "Main";
-        else this.parent = parentinput;
+        this.parent = parentinput;
         this.vars = new LinkedHashMap<String, Variables>();
         // this.varoffset = 0; SymbolTable.varoffset = 0;
         // this.methodoffset = 0; SymbolTable.methodoffset = 0;

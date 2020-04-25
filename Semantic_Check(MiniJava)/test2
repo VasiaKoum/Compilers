@@ -12,9 +12,10 @@ class A{
     public int func(int num){
         int num_aux;
         A obj;
-        obj = num_aux;
+        E e;
+        obj = e;
         {
-            x=2;
+            bool=2;
         }
         return 2;
     }
@@ -26,11 +27,12 @@ class C{
     boolean boolis;
     int vasia;
 
-    public int func2(int num){
+    public int func(int num){
         int num_aux;
         A obj;
+        num_aux = true;
         {
-            x=2;
+            num_aux=2;
         }
         return 2;
     }
@@ -38,4 +40,9 @@ class C{
 
 class B extends A{
     int othernum;
+
+    public int vasia(){
+        num = 5;
+        return num;
+    }
 }

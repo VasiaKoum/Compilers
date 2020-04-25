@@ -11,6 +11,21 @@ public class TypeChecking extends GJDepthFirst<String, LinkedHashMap<String, Var
         this.symboltable = finalst;
     }
 
+    public String visit(MainClass n, LinkedHashMap<String, Variables> argu) {
+       String _ret=null;
+       String nameclass = n.f1.accept(this, argu);
+       Classes addClass = new Classes(nameclass, null);
+       Methods addMethod = new Methods("main", nameclass, "void");
+       symboltable.classes.put(nameclass, addClass);
+       symboltable.methods.put(nameclass+"main", addMethod);
+       symboltable.currentclass = addClass;
+       symboltable.currentmethod = addMethod;
+       symboltable.classmethod = true;
+       n.f14.accept(this, symboltable.methods.get(nameclass+"main").vars);
+       n.f15.accept(this, symboltable.methods.get(nameclass+"main").vars);
+       return _ret;
+    }
+
     public String visit(NodeToken n, LinkedHashMap<String, Variables> argu) { return n.toString(); }
 
     public String visit(VarDeclaration n, LinkedHashMap<String, Variables> argu) {
@@ -18,7 +33,6 @@ public class TypeChecking extends GJDepthFirst<String, LinkedHashMap<String, Var
       String type = n.f0.accept(this, argu);
       String name = n.f1.accept(this, argu);
       System.out.println("\t"+type+" "+name);
-      if (argu == null) System.out.println("current class "+symboltable.currentclass);
       argu.put(name, new Variables(name, type));
       return _ret;
     }
@@ -35,8 +49,9 @@ public class TypeChecking extends GJDepthFirst<String, LinkedHashMap<String, Var
       String _ret=null;
       String name = n.f1.accept(this, argu);
       System.out.println(name+":");
-      symboltable.classes.put(name, new Classes(name, null));
-      symboltable.currentclass = name;
+      Classes addClass = new Classes(name, null);
+      symboltable.classes.put(name, addClass);
+      symboltable.currentclass = addClass;
       symboltable.classmethod = true;
       n.f3.accept(this, symboltable.classes.get(name).vars);
       n.f4.accept(this, argu);
@@ -50,8 +65,9 @@ public class TypeChecking extends GJDepthFirst<String, LinkedHashMap<String, Var
         name = n.f1.accept(this, argu);
         parentname = n.f3.accept(this, argu);
         System.out.println(parentname+":"+name+":");
-        symboltable.classes.put(name, new Classes(name, parentname));
-        symboltable.currentclass = name;
+        Classes addClass = new Classes(name, parentname);
+        symboltable.classes.put(name, addClass);
+        symboltable.currentclass = addClass;
         symboltable.classmethod = true;
         // List<Long> parentvars = new ArrayList<>(STsymboltable.classes.get(parentname).vars.keySet());
         // List<Long> vars = new ArrayList<>(STsymboltable.classes.get(name).vars.keySet());
@@ -59,31 +75,33 @@ public class TypeChecking extends GJDepthFirst<String, LinkedHashMap<String, Var
         // else{
         //     n.f5.accept(this, symboltable.classes.get(name).vars);
         //     n.f6.accept(this, argu);
-    System.out.println("--------------------------------");
+        System.out.println("--------------------------------");
         return _ret;
     }
 
     public String visit(FormalParameter n, LinkedHashMap<String, Variables> argu) {
-       String _ret=null;
-       String name = n.f1.accept(this, argu);
-       String type = n.f0.accept(this, argu);
-       System.out.println("\t["+type+" "+name+"]");
-       argu.put(name, new Variables(name, type));
-       return _ret;
+        String _ret=null;
+        String name = n.f1.accept(this, argu);
+        String type = n.f0.accept(this, argu);
+        System.out.println("\t["+type+" "+name+"]");
+        argu.put(name, new Variables(name, type));
+        return _ret;
     }
 
     public String visit(MethodDeclaration n, LinkedHashMap<String, Variables> argu) {
-      String _ret=null;
-      String name = n.f2.accept(this, argu);
-      String type = n.f1.accept(this, argu);
-      System.out.println(name+":");
-      symboltable.currentmethod = name;
-      symboltable.classmethod = false;
-      symboltable.methods.put(name, new Methods(name, symboltable.currentclass, type));
-      n.f4.accept(this, symboltable.methods.get(name).args);
-      n.f7.accept(this, symboltable.methods.get(name).vars);
-      n.f8.accept(this, symboltable.methods.get(name).vars);
-      return _ret;
+        String _ret=null;
+        String name = n.f2.accept(this, argu);
+        String type = n.f1.accept(this, argu);
+        String checkmethod = symboltable.currentclass.name+name;
+        System.out.println(name+":");
+        Methods addMethod = new Methods(name, symboltable.currentclass.name, type);
+        symboltable.currentmethod = addMethod;
+        symboltable.methods.put(checkmethod, addMethod);
+        symboltable.classmethod = false;
+        n.f4.accept(this, symboltable.methods.get(checkmethod).args);
+        n.f7.accept(this, symboltable.methods.get(checkmethod).vars);
+        n.f8.accept(this, symboltable.methods.get(checkmethod).vars);
+        return _ret;
     }
 
     /**
@@ -93,20 +111,53 @@ public class TypeChecking extends GJDepthFirst<String, LinkedHashMap<String, Var
      * f3 -> ";"
      */
     public String visit(AssignmentStatement n,  LinkedHashMap<String, Variables> argu) {
-       String _ret=null;
-       String name = n.f0.accept(this, argu);
-       String typeid = symboltable.currenttypevar;
-       String expr = n.f2.accept(this, argu);
-       String typeexpr = symboltable.currenttypevar;
-       System.out.println("In class: "+symboltable.currentclass+" In method: "+symboltable.currentmethod);
-       System.out.println("Expression: "+name+" = "+expr);
-       System.out.println("Expression types: "+typeid+" = "+typeexpr);
-       return _ret;
+        String _ret=null;
+        String name = n.f0.accept(this, argu);
+        String typeid = symboltable.currenttypevar;
+        String expr = n.f2.accept(this, argu);
+        String typeexpr = symboltable.currenttypevar;
+        Variables idvar, exprvar;
+
+        if((idvar = symboltable.findvar(symboltable.currentclass.name, symboltable.currentmethod.name, name))!=null){
+            System.out.println("Exists!");
+            if(typeexpr == "int"){
+                if(idvar.type == "int") System.out.println("Accepted: "+name+" = "+expr);
+                else{
+                    System.out.println("Incompatible types: int cannot be converted to "+idvar.type);
+                    System.exit(0);
+                }
+            }
+            else if(typeexpr == "boolean"){
+                if(idvar.type == "boolean") System.out.println("Accepted: "+name+" = "+expr);
+                else{
+                    System.out.println("Incompatible types: int cannot be converted to "+idvar.type);
+                    System.exit(0);
+                }
+            }
+            else{
+                // FIX THAT!
+                if((exprvar = symboltable.findvar(symboltable.currentclass.name, symboltable.currentmethod.name, expr))!=null){
+                    if(idvar.type == exprvar.type) {
+                        System.out.println("Accepted: "+name+" = "+expr);
+                    }
+                    else{
+                        System.out.println("Incompatible types: "+exprvar.type+" cannot be converted to "+idvar.type);
+                        System.exit(0);
+                    }
+                }
+                else{
+                    System.out.println("Identifier "+expr+ " in expression is not declared!");
+                    System.exit(0);
+                }
+            }
+        }
+        else{
+            System.out.println("Identifier "+name+ " in expression is not declared!");
+            System.exit(0);
+        }
+        return _ret;
     }
 
-    /**
-     * f0 -> <IDENTIFIER>
-     */
     public String visit(Identifier n, LinkedHashMap<String, Variables> argu) {
         String name = n.f0.accept(this, argu);
         symboltable.currenttypevar = name;
