@@ -28,7 +28,6 @@ class Main{
 				TypeChecking typechecking = new TypeChecking(symboltable, finalsymboltable);
 				root.accept(typechecking, null);
 				System.err.println("Program compiled successfully!");
-				// typechecking.IterateHashMap();
 			}
 			catch(ParseException ex){
 				System.out.println(ex.getMessage());
