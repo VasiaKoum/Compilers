@@ -118,17 +118,16 @@ public class TypeChecking extends GJDepthFirst<String, String>{
             System.out.println("AssignmentStatement: Identifier "+name+ " in expression is not declared!");
             System.exit(0);
         }
-
         return _ret;
     }
 
     public String visit(AndExpression n, String argu) {
        String _ret=null;
-       if (argu == "boolean"){
+       if(argu.equals("boolean")){
            n.f0.accept(this, "boolean");
            n.f2.accept(this, "boolean");
        }
-       else {
+       else{
            System.out.println("AndExpression: Expression is type of: "+argu+ ", expected boolean.");
            System.exit(0);
        }
@@ -137,11 +136,11 @@ public class TypeChecking extends GJDepthFirst<String, String>{
 
     public String visit(CompareExpression n, String argu) {
        String _ret=null;
-       if (argu == "boolean"){
+       if(argu.equals("boolean")){
            n.f0.accept(this, "int");
            n.f2.accept(this, "int");
        }
-       else {
+       else{
            System.out.println("CompareExpression: Expression is type of: "+argu+ ", expected boolean.");
            System.exit(0);
        }
@@ -150,11 +149,11 @@ public class TypeChecking extends GJDepthFirst<String, String>{
 
     public String visit(PlusExpression n, String argu) {
        String _ret=null;
-       if (argu == "int"){
+       if(argu.equals("int")){
            n.f0.accept(this, "int");
            n.f2.accept(this, "int");
        }
-       else {
+       else{
            System.out.println("PlusExpression: Expression is type of: "+argu+ ", expected int.");
            System.exit(0);
        }
@@ -163,11 +162,11 @@ public class TypeChecking extends GJDepthFirst<String, String>{
 
     public String visit(MinusExpression n, String argu) {
        String _ret=null;
-       if (argu == "int"){
+       if(argu.equals("int")){
            n.f0.accept(this, "int");
            n.f2.accept(this, "int");
        }
-       else {
+       else{
            System.out.println("MinusExpression: Expression is type of: "+argu+ ", expected int.");
            System.exit(0);
        }
@@ -176,11 +175,11 @@ public class TypeChecking extends GJDepthFirst<String, String>{
 
     public String visit(TimesExpression n, String argu) {
        String _ret=null;
-       if (argu == "int"){
+       if (argu.equals("int")){
            n.f0.accept(this, "int");
            n.f2.accept(this, "int");
        }
-       else {
+       else{
            System.out.println("TimesExpression: Expression is type of: "+argu+ ", expected int.");
            System.exit(0);
        }
@@ -192,11 +191,11 @@ public class TypeChecking extends GJDepthFirst<String, String>{
        String type = n.f0.accept(this, "[]");
        Variables var;
        String index = n.f2.accept(this, "int");
-       if(index=="int"){
-           if(type == "int[]" || type == "boolean[]"){
+       if(index.equals("int")){
+           if(type.equals("int[]") || type.equals("boolean[]")){
                type = type.replace("[]","");
            }
-           else {
+           else{
                System.out.println("ArrayLookup: Expression is type of: "+type+ ", expected arraytype.");
                System.exit(0);
            }
@@ -211,74 +210,74 @@ public class TypeChecking extends GJDepthFirst<String, String>{
     public String visit(ArrayLength n, String argu) {
        String _ret=null;
        String type = n.f0.accept(this, "[]");
-       if(!(type == "int[]" || type == "boolean[]")){
+       if(!(type.equals("int[]") || type.equals("boolean[]"))){
            System.out.println("ArrayLength: Expression is type of: "+type+ ", expected arraytype.");
            System.exit(0);
        }
        return "int";
     }
 
-    /**
-     * f0 -> PrimaryExpression()
-     * f1 -> "."
-     * f2 -> Identifier()
-     * f3 -> "("
-     * f4 -> ( ExpressionList() )?
-     * f5 -> ")"
-     */
     public String visit(MessageSend n, String argu) {
        String _ret=null;
        String prim = n.f0.accept(this, null);
        String id = n.f2.accept(this, null);
        Methods method = null;
        String args = null;
-       System.out.println("argu are: "+argu+" prim "+prim+" id "+id);
-       if(argu=="boolean" || argu=="int"){
+       if(argu.equals("boolean") || argu.equals("int")){
            if((method = symboltable.findmethod(symboltable.currentclass.name, symboltable.currentmethod.name, prim, id))!=null){
                for (String keyvars : method.args.keySet()) {
                    if(args==null) args = method.args.get(keyvars).type;
                    else args = args +","+method.args.get(keyvars).type;
                }
-               System.out.println("args are: "+args);
-               String prim2 = n.f4.accept(this, args);
+               symboltable.methodpars = args;
+               symboltable.numpars = 0;
+               _ret = method.type;
+               n.f4.accept(this, argu);
+               if(method.args.size()!=symboltable.numpars){
+                    System.out.println("MessageSend: Method "+method.name+" cannot be applied to given types.");
+                    System.exit(0);
+               }
            }
            else{
                System.out.println("MessageSend: Not method found: "+id+".");
+               System.exit(0);
            }
        }
        else{
            System.out.println("MessageSend: Expression is type of: "+argu+ ", expected int or boolean.");
+           System.exit(0);
        }
        return _ret;
     }
 
-    /**
-     * f0 -> Expression()
-     * f1 -> ExpressionTail()
-     */
     public String visit(ExpressionList n, String argu) {
-       String _ret=null;
-       String expr = n.f0.accept(this, argu);
-       String exprt = n.f1.accept(this, argu);
-       System.out.println("ExpressionList: argu: "+argu+" expr: "+expr+ " exprt: "+exprt);
-       return _ret;
+        String _ret=null;
+        String args[];
+        args = symboltable.methodpars.split(",", 2);
+        if(args.length>1) symboltable.methodpars = args[1];
+        else args[0] = symboltable.methodpars;
+        String expr = n.f0.accept(this, args[0]);
+        if(!args[0].equals(expr)){
+            System.out.println("ExpressionList: Wrong given types at method, given: "+expr+" expected: "+args[0]);
+            System.exit(0);
+        }
+        String exprt = n.f1.accept(this, argu);
+        symboltable.numpars+=1;
+        return _ret;
     }
 
-    /**
-     * f0 -> ( ExpressionTerm() )*
-     */
-    public String visit(ExpressionTail n, String argu) {
-       return n.f0.accept(this, argu);
-    }
-
-    /**
-     * f0 -> ","
-     * f1 -> Expression()
-     */
     public String visit(ExpressionTerm n, String argu) {
        String _ret=null;
-       String expr = n.f1.accept(this, argu);
-       System.out.println("ExpressionTerm: argu: "+argu+ " expr: "+expr);
+       String args[];
+       args = symboltable.methodpars.split(",", 2);
+       if(args.length>1) symboltable.methodpars = args[1];
+       else args[0] = symboltable.methodpars;
+       String expr = n.f1.accept(this, args[0]);
+       symboltable.numpars+=1;
+       if(!args[0].equals(expr)){
+           System.out.println("ExpressionTerm: Wrong given types at method, given: "+expr+" expected: "+args[0]);
+           System.exit(0);
+       }
        return _ret;
     }
 
@@ -316,11 +315,11 @@ public class TypeChecking extends GJDepthFirst<String, String>{
 
     public String visit(BooleanArrayAllocationExpression n, String argu) {
        String expr = n.f3.accept(this, argu);
-       if(expr!="int"){
+       if(!expr.equals("int")){
            System.out.println("BooleanArrayAllocationExpression:  Expression is type of: "+expr+ ", expected int.");
            System.exit(0);
        }
-       if(argu!="boolean[]"){
+       if(!argu.equals("boolean[]")){
            System.out.println("BooleanArrayAllocationExpression:  Expression is type of: "+argu+ ", expected boolean arraytype.");
            System.exit(0);
        }
@@ -329,11 +328,11 @@ public class TypeChecking extends GJDepthFirst<String, String>{
 
     public String visit(IntegerArrayAllocationExpression n, String argu) {
         String expr = n.f3.accept(this, argu);
-        if(expr!="int"){
+        if(!expr.equals("int")){
             System.out.println("IntegerArrayAllocationExpression: Expression is type of: "+expr+ ", expected int.");
             System.exit(0);
         }
-        if(argu!="int[]"){
+        if(!argu.equals("int[]")){
             System.out.println("IntegerArrayAllocationExpression: Expression is type of: "+argu+ ", expected int arraytype.");
             System.exit(0);
         }
@@ -342,7 +341,7 @@ public class TypeChecking extends GJDepthFirst<String, String>{
 
     public String visit(AllocationExpression n, String argu) {
        String name = n.f1.accept(this, argu);
-       if(argu!=null && argu!=name){
+       if(argu!=null && !argu.equals(name)){
            if(!symboltable.checkparent(STsymboltable, argu, name)){
                System.out.println("AllocationExpression: Expression is type of: "+name+ ", expected "+argu+".");
                System.exit(0);
@@ -353,7 +352,7 @@ public class TypeChecking extends GJDepthFirst<String, String>{
 
     public String visit(BracketExpression n, String argu) {
        String expr = n.f1.accept(this, argu);
-       if(argu!=expr){
+       if(!argu.equals(expr)){
            System.out.println("BracketExpression: Expression is type of: "+expr+ ", expected "+argu+".");
            System.exit(0);
        }
@@ -362,7 +361,7 @@ public class TypeChecking extends GJDepthFirst<String, String>{
 
     public String visit(NotExpression n, String argu) {
        String clause = n.f1.accept(this, "boolean");
-       if(argu!="boolean"){
+       if(!argu.equals("boolean")){
            System.out.println("NotExpression: Expression is type of: "+argu+ ", expected boolean.");
            System.exit(0);
        }

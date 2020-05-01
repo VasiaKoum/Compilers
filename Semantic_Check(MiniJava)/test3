@@ -11,7 +11,7 @@ class A{
     boolean r;
     boolean[] bool2;
 
-    public int func(int y, int[] o, boolean[] c){
+    public boolean func(int y, int[] o, boolean c, boolean[] c2){
         int num_aux;
         A obj;
         {
@@ -36,7 +36,7 @@ class B extends A{
     public int func(){
         a = ((new B()));
         i = i2[i];
-        b = a.func(b, i);
+        b = a.func((i*3)*3, i2, (!(true)), b2);
         return 2;
     }
 }

@@ -9,14 +9,13 @@ class SymbolTable{
     Classes currentclass;
     Methods currentmethod;
     static String scope;
-
-    // FIX FOR VisitorSymbolTable
-    static Boolean classmethod;
+    static String methodpars;
+    static int numpars;
 
     public SymbolTable(){
         this.classes = new LinkedHashMap<String, Classes>();
         this.methods = new LinkedHashMap<String, Methods>();
-        this.scope = "";
+        this.scope = ""; this.methodpars = ""; this.numpars = 0;
     }
 
     public void putvar(SymbolTable oldst, String nclass, String nmethod, Variables nvar, String scope){
