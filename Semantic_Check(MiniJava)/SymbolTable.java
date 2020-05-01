@@ -19,9 +19,9 @@ class SymbolTable{
     }
 
     public void putvar(SymbolTable oldst, String nclass, String nmethod, Variables nvar, String scope){
-        if(scope == "Class"){
+        if(scope.equals("Class")){
             if(classes.get(nclass)!=null){
-                if(nvar.type == "int" || nvar.type == "boolean" || nvar.type == "int[]" || nvar.type == "boolean[]")
+                if(nvar.type.equals("int") || nvar.type.equals("boolean") || nvar.type.equals("int[]") || nvar.type.equals("boolean[]"))
                     classes.get(nclass).vars.put(nvar.name, nvar);
                 else{
                     if(oldst!=null){
@@ -34,16 +34,16 @@ class SymbolTable{
                 }
             }
         }
-        else if(scope == "Vars"){
+        else if(scope.equals("Vars")){
             if(methods.get(nclass+nmethod)!=null){ methods.get(nclass+nmethod).vars.put(nvar.name, nvar);  }
         }
-        else if(scope == "Args"){
+        else if(scope.equals("Args")){
             if(methods.get(nclass+nmethod)!=null){ methods.get(nclass+nmethod).args.put(nvar.name, nvar); }
         }
     }
 
     public void vardecl(String nclass, String nmethod, Variables nvar, String scope){
-        if(scope == "Class"){
+        if(scope.equals("Class")){
             if(classes.get(nclass)!=null){
                 if(classes.get(nclass).vars.get(nvar.name)==null){
                     classes.get(nclass).vars.put(nvar.name, nvar);
@@ -54,7 +54,7 @@ class SymbolTable{
                 }
             }
         }
-        else if(scope == "Vars"){
+        else if(scope.equals("Vars")){
             if(methods.get(nclass+nmethod)!=null){
                 if((methods.get(nclass+nmethod).args.get(nvar.name)==null) && (methods.get(nclass+nmethod).vars.get(nvar.name)==null)){
                     methods.get(nclass+nmethod).vars.put(nvar.name, nvar);
@@ -65,7 +65,7 @@ class SymbolTable{
                 }
             }
         }
-        else if(scope == "Args"){
+        else if(scope.equals("Args")){
             if(methods.get(nclass+nmethod)!=null){
                 if(methods.get(nclass+nmethod).args.get(nvar.name)==null){
                     methods.get(nclass+nmethod).args.put(nvar.name, nvar);
@@ -125,7 +125,7 @@ class SymbolTable{
         if((parent = oldst.classes.get(classB))!=null){
             if(oldst.classes.get(classA)!=null){
                 while(!not_found){
-                    if(parent.name == classA){ not_found = true; returned = true; }
+                    if(parent.name.equals(classA)){ not_found = true; returned = true; }
                     else{
                         if(oldst.classes.get(parent.parent)!=null) parent = oldst.classes.get(parent.parent);
                         else not_found = true;

@@ -87,7 +87,7 @@ class CalculatorEval{
         else {
             char digit = Digit();
             number=number+digit;
-            String returnNum = Num2(number);
+            String returnNum = (String)Num2(number);
             if(returnNum!="") {
                 int result = Integer.parseInt(returnNum);
                 return result;
@@ -101,7 +101,7 @@ class CalculatorEval{
         if(lookaheadToken >= '0' && lookaheadToken <= '9') {
             char digit = Digit();
             number=number+digit;
-            Num2(number);
+            number = Num2(number);
         }
         x = lookaheadToken;
         if(!(x=='+'||x=='-'||x=='/'||x=='*'||x==')'||x=='\n'||x==-1||x=='\r'))
