@@ -25,10 +25,12 @@ class SymbolTable{
                 if(nvar.type == "int" || nvar.type == "boolean" || nvar.type == "int[]" || nvar.type == "boolean[]")
                     classes.get(nclass).vars.put(nvar.name, nvar);
                 else{
-                    if(oldst.classes.get(nvar.type)!=null) classes.get(nclass).vars.put(nvar.name, nvar);
-                    else {
-                        System.out.println("Cannot find symbol: "+nvar.type+" in var declaration.");
-                        System.exit(0);
+                    if(oldst!=null){
+                        if(oldst.classes.get(nvar.type)!=null) classes.get(nclass).vars.put(nvar.name, nvar);
+                        else {
+                            System.out.println("Cannot find symbol: "+nvar.type+" in var declaration.");
+                            System.exit(0);
+                        }
                     }
                 }
             }
@@ -39,7 +41,42 @@ class SymbolTable{
         else if(scope == "Args"){
             if(methods.get(nclass+nmethod)!=null){ methods.get(nclass+nmethod).args.put(nvar.name, nvar); }
         }
+    }
 
+    public void vardecl(String nclass, String nmethod, Variables nvar, String scope){
+        if(scope == "Class"){
+            if(classes.get(nclass)!=null){
+                if(classes.get(nclass).vars.get(nvar.name)==null){
+                    classes.get(nclass).vars.put(nvar.name, nvar);
+                }
+                else{
+                    System.out.println("Variable "+nvar.name+" is already defined in class.");
+                    System.exit(0);
+                }
+            }
+        }
+        else if(scope == "Vars"){
+            if(methods.get(nclass+nmethod)!=null){
+                if((methods.get(nclass+nmethod).args.get(nvar.name)==null) && (methods.get(nclass+nmethod).vars.get(nvar.name)==null)){
+                    methods.get(nclass+nmethod).vars.put(nvar.name, nvar);
+                }
+                else{
+                    System.out.println("Variable "+nvar.name+" is already defined in method.");
+                    System.exit(0);
+                }
+            }
+        }
+        else if(scope == "Args"){
+            if(methods.get(nclass+nmethod)!=null){
+                if(methods.get(nclass+nmethod).args.get(nvar.name)==null){
+                    methods.get(nclass+nmethod).args.put(nvar.name, nvar);
+                }
+                else{
+                    System.out.println("Variable "+nvar.name+" is already defined in method.");
+                    System.exit(0);
+                }
+            }
+        }
     }
 
     public Variables findvar(String nclass, String nmethod, String nvar){

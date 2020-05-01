@@ -69,12 +69,8 @@ public class TypeChecking extends GJDepthFirst<String, String>{
         symboltable.classes.put(name, addClass);
         symboltable.currentclass = addClass;
         symboltable.scope = "Class";
-        // List<Long> parentvars = new ArrayList<>(STsymboltable.classes.get(parentname).vars.keySet());
-        // List<Long> vars = new ArrayList<>(STsymboltable.classes.get(name).vars.keySet());
-        // if(parentvars.containsAll(vars)) System.out.println("Double declaration");
-        // else{
-            n.f5.accept(this, argu);
-            n.f6.accept(this, argu);
+        n.f5.accept(this, argu);
+        n.f6.accept(this, argu);
         System.out.println("--------------------------------");
         return _ret;
     }
@@ -111,9 +107,12 @@ public class TypeChecking extends GJDepthFirst<String, String>{
         String name = n.f0.accept(this, argu);
         String expr;
         Variables idvar;
-
         if((idvar = symboltable.findvar(symboltable.currentclass.name, symboltable.currentmethod.name, name))!=null){
             expr = n.f2.accept(this, idvar.type);
+            if(!(idvar.type.equals(expr))){
+                System.out.println("AssignmentStatement: Expression is type of: "+expr+ ", expected "+idvar.type+".");
+                System.exit(0);
+            }
         }
         else{
             System.out.println("AssignmentStatement: Identifier "+name+ " in expression is not declared!");
@@ -190,30 +189,30 @@ public class TypeChecking extends GJDepthFirst<String, String>{
 
     public String visit(ArrayLookup n, String argu) {
        String _ret=null;
-       String name = n.f0.accept(this, "[]"), type=null;
+       String type = n.f0.accept(this, "[]");
        Variables var;
-       String r = n.f2.accept(this, "int");
-       if((var = symboltable.findvar(symboltable.currentclass.name, symboltable.currentmethod.name, name))!=null){
-           if((var.type == "int[]" || var.type == "boolean[]") && (argu == "int" || argu == "boolean")){
-               type = var.type.replace("[]","");
-               if(!(type.equals(argu))){
-                   System.out.println("ArrayLookup: Expression is type of: "+var.type+ ", expected "+argu+".");
-                   System.exit(0);
-               }
+       String index = n.f2.accept(this, "int");
+       if(index=="int"){
+           if(type == "int[]" || type == "boolean[]"){
+               type = type.replace("[]","");
            }
            else {
-               System.out.println("ArrayLookup: Expression is type of: "+var.type+ ", expected "+argu+".");
+               System.out.println("ArrayLookup: Expression is type of: "+type+ ", expected arraytype.");
                System.exit(0);
            }
+       }
+       else{
+           System.out.println("ArrayLookup: Index in arraytype is type of: "+index+ ", expected int.");
+           System.exit(0);
        }
        return type;
     }
 
     public String visit(ArrayLength n, String argu) {
        String _ret=null;
-       String name = n.f0.accept(this, "[]");
-       if(argu!="int"){
-           System.out.println("ArrayLength: Expression is type of: "+argu+ ", expected int.");
+       String type = n.f0.accept(this, "[]");
+       if(!(type == "int[]" || type == "boolean[]")){
+           System.out.println("ArrayLength: Expression is type of: "+type+ ", expected arraytype.");
            System.exit(0);
        }
        return "int";
@@ -288,21 +287,12 @@ public class TypeChecking extends GJDepthFirst<String, String>{
         Variables idvar;
         if(argu!=null){
             if((idvar = symboltable.findvar(symboltable.currentclass.name, symboltable.currentmethod.name, name))!=null){
-                if(argu=="[]"&&(idvar.type!="boolean[]" && idvar.type!="int[]")){
-                    System.out.println("Identifier: Expression is type of: "+idvar.type+ ", expected arraytype.");
-                    System.exit(0);
-                }
-                else if(argu!="[]" && idvar.type!=argu){
-                    System.out.println("Identifier: Expression is type of: "+idvar.type+ ", expected "+argu+".");
-                    System.exit(0);
-                }
-                // FIX IT
                 name = idvar.type;
             }
             else {
                 if(!symboltable.isclasstype(STsymboltable, name)){
                     System.out.println("Identifier: Identifier "+name+ " in expression is not declared!");
-                    //System.exit(0);
+                    System.exit(0);
                 }
             }
         }
@@ -316,7 +306,7 @@ public class TypeChecking extends GJDepthFirst<String, String>{
 
     public String visit(TrueLiteral n, String argu) {
         n.f0.accept(this, argu);
-        return "int";
+        return "boolean";
     }
 
     public String visit(FalseLiteral n, String argu) {

@@ -23,7 +23,7 @@ class Main{
 
 				VisitorSymbolTable visitorsymboltable = new VisitorSymbolTable(symboltable);
 				root.accept(visitorsymboltable, null);
-
+				// symboltable.IterateSymbolTable();
 				System.out.println("TYPE-CHECKING:");
 				TypeChecking typechecking = new TypeChecking(symboltable, finalsymboltable);
 				root.accept(typechecking, null);

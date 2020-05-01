@@ -35,8 +35,8 @@ class B extends A{
 
     public int func(){
         a = ((new B()));
-
-        b = new A().func(b, b);
+        i = i2[i];
+        b = a.func(b, i);
         return 2;
     }
 }
