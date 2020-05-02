@@ -158,6 +158,43 @@ class SymbolTable{
         return returned;
     }
 
+    // 0 -> not found similar method, -1-> found similar method NOT SAME, 1-> found similar method AND SAME
+    public int overloading(Classes nclass, Methods nmethod){
+        int returned = 0;
+        Classes parent;
+        Methods parentmethod;
+        boolean not_found = false;
+        if((parent = classes.get(nclass.parent))!=null){
+            while(!not_found){
+                if((parentmethod = methods.get(parent.name+nmethod.name))!=null){
+                    if(parentmethod.name.equals(nmethod.name) && parentmethod.type.equals(nmethod.type)){
+                        returned = -1;
+                        if(ArgstoString(nmethod.args).equals(ArgstoString(parentmethod.args))){
+                            not_found = true; returned = 1;
+                        }
+                    }
+                }
+                if(classes.get(parent.parent)!=null) parent = classes.get(parent.parent);
+                else not_found = true;
+            }
+        }
+        return returned;
+    }
+
+    public String ArgstoString(LinkedHashMap<String, Variables> hm){
+        String returned = "";
+        for (String key : hm.keySet()) {
+            if(returned.equals("")) returned = hm.get(key).type;
+            else returned = returned+","+hm.get(key).type;
+        }
+        return returned;
+    }
+
+    public void addoffsets(){
+
+    }
+
+
     public void IterateSymbolTable(){
         System.out.println("\n\nLINKEDHASHMAP printing: ");
         for (String keyclass : classes.keySet()) {
@@ -176,9 +213,5 @@ class SymbolTable{
                 System.out.println("\t"+methods.get(keymethod).vars.get(keyvars).type+" "+methods.get(keymethod).vars.get(keyvars).name);
             }
         }
-    }
-
-    public void addoffsets(){
-
     }
 }

@@ -79,23 +79,25 @@ public class VisitorSymbolTable extends GJDepthFirst<String, String>{
     }
 
     public String visit(MethodDeclaration n, String argu){
-      String _ret=null;
-      String name = n.f2.accept(this, argu);
-      String type = n.f1.accept(this, argu);
-      String checkmethod = symboltable.currentclass.name+name;
-      if (symboltable.methods.get(checkmethod) != null){
-          throw new RuntimeException("MethodDeclaration: Already declared: function "+type+" "+name);
-      }
-      else{
-          Methods addMethod = new Methods(name, symboltable.currentclass.name, type);
-          symboltable.currentmethod = addMethod;
-          symboltable.methods.put(checkmethod, addMethod);
-          symboltable.scope = "Args";
-          n.f4.accept(this, argu);
-          symboltable.scope = "Vars";
-          n.f7.accept(this, argu);
-      }
-      return _ret;
+        String _ret=null;
+        String name = n.f2.accept(this, argu);
+        String type = n.f1.accept(this, argu);
+        String checkmethod = symboltable.currentclass.name+name;
+        if (symboltable.methods.get(checkmethod) != null){
+            throw new RuntimeException("MethodDeclaration: Already declared: function "+type+" "+name);
+        }
+        else{
+            Methods addMethod = new Methods(name, symboltable.currentclass.name, type);
+            symboltable.currentmethod = addMethod;
+            symboltable.methods.put(checkmethod, addMethod);
+            symboltable.scope = "Args";
+            n.f4.accept(this, argu);
+            int overldresult = symboltable.overloading(symboltable.currentclass, addMethod);
+            if(overldresult == -1) throw new RuntimeException("MethodDeclaration: Overloading: Already declared: function "+type+" "+name);
+            symboltable.scope = "Vars";
+            n.f7.accept(this, argu);
+        }
+        return _ret;
     }
 
     public String visit(ClassExtendsDeclaration n, String argu) {

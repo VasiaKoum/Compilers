@@ -9,7 +9,7 @@ class D{
     B b;
 
     public int here(){
-        b = a;
+        a = b;
         return 4;
     }
 }
@@ -19,7 +19,7 @@ class A{
     int[] arr;
     boolean bool;
 
-    public int func(int num){
+    public int func(int nums){
         int num_aux;
         A obj;
         {
@@ -35,7 +35,7 @@ class C{
     boolean boolis;
     int vasia;
 
-    public int func(int num){
+    public int func(int nums){
         int num_aux;
         A obj;
         {
