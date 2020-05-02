@@ -11,11 +11,12 @@ class SymbolTable{
     static String scope;
     static String methodpars;
     static int numpars;
+    static int numargs;
 
     public SymbolTable(){
         this.classes = new LinkedHashMap<String, Classes>();
         this.methods = new LinkedHashMap<String, Methods>();
-        this.scope = ""; this.methodpars = ""; this.numpars = 0;
+        this.scope = ""; this.methodpars = ""; this.numpars = 0; this.numargs = 0;
     }
 
     public void putvar(SymbolTable oldst, String nclass, String nmethod, Variables nvar, String scope){
@@ -27,8 +28,7 @@ class SymbolTable{
                     if(oldst!=null){
                         if(oldst.classes.get(nvar.type)!=null) classes.get(nclass).vars.put(nvar.name, nvar);
                         else {
-                            System.out.println("Cannot find symbol: "+nvar.type+" in var declaration.");
-                            System.exit(0);
+                            throw new RuntimeException("Cannot find symbol: "+nvar.type+" in var declaration.");
                         }
                     }
                 }
@@ -49,8 +49,7 @@ class SymbolTable{
                     classes.get(nclass).vars.put(nvar.name, nvar);
                 }
                 else{
-                    System.out.println("Variable "+nvar.name+" is already defined in class.");
-                    System.exit(0);
+                    throw new RuntimeException("Variable "+nvar.name+" is already defined in class.");
                 }
             }
         }
@@ -60,8 +59,7 @@ class SymbolTable{
                     methods.get(nclass+nmethod).vars.put(nvar.name, nvar);
                 }
                 else{
-                    System.out.println("Variable "+nvar.name+" is already defined in method.");
-                    System.exit(0);
+                    throw new RuntimeException("Variable "+nvar.name+" is already defined in method.");
                 }
             }
         }
@@ -71,8 +69,7 @@ class SymbolTable{
                     methods.get(nclass+nmethod).args.put(nvar.name, nvar);
                 }
                 else{
-                    System.out.println("Variable "+nvar.name+" is already defined in method.");
-                    System.exit(0);
+                    throw new RuntimeException("Variable "+nvar.name+" is already defined in method.");
                 }
             }
         }
@@ -107,12 +104,31 @@ class SymbolTable{
         return var;
     }
 
-    public Methods findmethod(String nclass, String nmethod, String primname, String methodname){
+    public Methods findmethod(SymbolTable oldst, String nclass, String nmethod, String primname, String methodname){
         Methods method = null;
-        Variables var = null;
-        var = findvar(nclass, nmethod, primname);
-        if(var!=null){
-            method = methods.get(var.type+methodname);
+        Variables var = findvar(nclass, nmethod, primname);
+        boolean not_found = true;
+        if(var == null) nclass = primname;
+        else nclass = var.type;
+        nmethod = methodname;
+        if(oldst.classes.get(nclass)!=null){
+            if(oldst.methods.get(nclass+nmethod)!=null) method = oldst.methods.get(nclass+nmethod);
+            else{
+                String parentname;
+                if(oldst.classes.get(nclass).parent!=null){
+                    parentname = oldst.classes.get(nclass).parent;
+                    while(not_found){
+                        if(oldst.methods.get(parentname+nmethod)!=null) {
+                            method = oldst.methods.get(parentname+nmethod);
+                            not_found = false;
+                        }
+                        else{
+                            if(oldst.classes.get(parentname).parent!=null) parentname = oldst.classes.get(parentname).parent;
+                            else not_found = false;
+                        }
+                    }
+                }
+            }
         }
         return method;
     }
@@ -162,4 +178,7 @@ class SymbolTable{
         }
     }
 
+    public void addoffsets(){
+
+    }
 }

@@ -9,10 +9,10 @@ class Main{
 			System.err.println("Usage: java Driver <inputFile>");
 			System.exit(-1);
 		}
-
 		for(int i=0; i<args.length; i++) {
             FileInputStream flsin = null;
 			try{
+				System.err.println("FILE ["+args[i]+"]");
             	flsin = new FileInputStream(args[i]);
             	MiniJavaParser parser = new MiniJavaParser(flsin);
             	Goal root = parser.Goal();
@@ -23,11 +23,16 @@ class Main{
 
 				VisitorSymbolTable visitorsymboltable = new VisitorSymbolTable(symboltable);
 				root.accept(visitorsymboltable, null);
-				// symboltable.IterateSymbolTable();
 				System.out.println("TYPE-CHECKING:");
 				TypeChecking typechecking = new TypeChecking(symboltable, finalsymboltable);
 				root.accept(typechecking, null);
+				finalsymboltable.addoffsets();
 				System.err.println("Program compiled successfully!");
+			}
+			catch(RuntimeException ex){
+				System.out.println("Compilation error at:");
+				System.out.println(ex.getMessage()+"\n");
+				continue;
 			}
 			catch(ParseException ex){
 				System.out.println(ex.getMessage());

@@ -11,13 +11,16 @@ class A{
     boolean r;
     boolean[] bool2;
 
-    public boolean func(int y, int[] o, boolean c, boolean[] c2){
+    public int funce(){
+        return (num+(num+(num)));
+    }
+    public int func(int y, int[] o, boolean c, boolean[] c2){
         int num_aux;
         A obj;
         {
             bool=((!(bool && bool)));
         }
-        return 2;
+        return (num+(num+(num)));
     }
 }
 
@@ -31,12 +34,13 @@ class B extends A{
     int[] i2;
     boolean[] b2;
     A a;
+    B be;
     C bw;
 
-    public int func(){
+    public int funcw(){
         a = ((new B()));
-        i = i2[i];
-        b = a.func((i*3)*3, i2, (!(true)), b2);
+        i2[(i*3)*3] = i2[9];
+        i = this.func((i*3)*3, i2, (!(true)), b2);
         return 2;
     }
 }

@@ -87,7 +87,7 @@ class CalculatorEval{
         else {
             char digit = Digit();
             number=number+digit;
-            String returnNum = (String)Num2(number);
+            String returnNum = Num2(number);
             if(returnNum!="") {
                 int result = Integer.parseInt(returnNum);
                 return result;

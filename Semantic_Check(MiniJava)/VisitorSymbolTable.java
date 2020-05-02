@@ -3,7 +3,7 @@ import syntaxtree.*;
 import java.util.*;
 import java.io.*;
 
-public class VisitorSymbolTable extends GJDepthFirst<String, String >{
+public class VisitorSymbolTable extends GJDepthFirst<String, String>{
     SymbolTable symboltable;
 
     public VisitorSymbolTable(SymbolTable st){
@@ -14,8 +14,7 @@ public class VisitorSymbolTable extends GJDepthFirst<String, String >{
        String _ret=null;
        String nameclass = n.f1.accept(this, argu);
        if (symboltable.classes.get("main") != null){
-           System.out.println("MainClass: Already declared: class main.");
-           System.exit(0);
+           throw new RuntimeException("MainClass: Already declared: class main.");
        }
        else{
            Classes addClass = new Classes(nameclass, null);
@@ -25,7 +24,6 @@ public class VisitorSymbolTable extends GJDepthFirst<String, String >{
            symboltable.currentclass = addClass;
            symboltable.currentmethod = addMethod;
            symboltable.scope = "Vars";
-           n.f14.accept(this, argu);
            n.f14.accept(this, argu);
        }
        return _ret;
@@ -37,6 +35,7 @@ public class VisitorSymbolTable extends GJDepthFirst<String, String >{
       String _ret=null;
       String type = n.f0.accept(this, argu);
       String name = n.f1.accept(this, argu);
+
       symboltable.vardecl(symboltable.currentclass.name, symboltable.currentmethod.name, new Variables(name, type), symboltable.scope);
       return _ret;
     }
@@ -53,8 +52,7 @@ public class VisitorSymbolTable extends GJDepthFirst<String, String >{
       String _ret=null;
       String name = n.f1.accept(this, argu);
       if (symboltable.classes.get(name) != null){
-          System.out.println("ClassDeclaration: Already declared: class "+name);
-          System.exit(0);
+         throw new RuntimeException("ClassDeclaration: Already declared: class "+name);
       }
       else{
           Classes addClass = new Classes(name, null);
@@ -72,8 +70,7 @@ public class VisitorSymbolTable extends GJDepthFirst<String, String >{
        String name = n.f1.accept(this, argu);
        String type = n.f0.accept(this, argu);
        if(symboltable.findvar(symboltable.currentclass.name, symboltable.currentmethod.name, name)!=null){
-           System.out.println("FormalParameter: Already declared: "+type+" "+name);
-           System.exit(0);
+           throw new RuntimeException("FormalParameter: Already declared: "+type+" "+name);
        }
        else {
            symboltable.putvar(null, symboltable.currentclass.name, symboltable.currentmethod.name, new Variables(name, type), symboltable.scope);
@@ -81,14 +78,13 @@ public class VisitorSymbolTable extends GJDepthFirst<String, String >{
        return _ret;
     }
 
-    public String visit(MethodDeclaration n, String argu) {
+    public String visit(MethodDeclaration n, String argu){
       String _ret=null;
       String name = n.f2.accept(this, argu);
       String type = n.f1.accept(this, argu);
       String checkmethod = symboltable.currentclass.name+name;
       if (symboltable.methods.get(checkmethod) != null){
-          System.out.println("MethodDeclaration: Already declared: function "+type+" "+name);
-          System.exit(0);
+          throw new RuntimeException("MethodDeclaration: Already declared: function "+type+" "+name);
       }
       else{
           Methods addMethod = new Methods(name, symboltable.currentclass.name, type);
@@ -108,13 +104,11 @@ public class VisitorSymbolTable extends GJDepthFirst<String, String >{
       name = n.f1.accept(this, argu);
       parentname = n.f3.accept(this, argu);
       if (symboltable.classes.get(name) != null){
-          System.out.println("ClassExtendsDeclaration: Already declared: class "+name);
-          System.exit(0);
+          throw new RuntimeException("ClassExtendsDeclaration: Already declared: class "+name);
       }
       else{
           if (symboltable.classes.get(parentname) == null){
-              System.out.println("ClassExtendsDeclaration: Parent class doesn't exist: class "+parentname);
-              System.exit(0);
+              throw new RuntimeException("ClassExtendsDeclaration: Parent class doesn't exist: class "+parentname);
           }
           else{
               Classes addClass = new Classes(name, parentname);
