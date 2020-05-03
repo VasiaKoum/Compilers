@@ -190,7 +190,6 @@ public class TypeChecking extends GJDepthFirst<String, String>{
        String id = n.f2.accept(this, null);
        Methods method = null;
        String args = null;
-       // System.out.println("MessageSend: "+argu+ " "+prim+" "+id);
        if((method = symboltable.findmethod(STsymboltable, symboltable.currentclass.name, symboltable.currentmethod.name, prim, id))!=null){
            for (String keyvars : method.args.keySet()) {
                if(args==null) args = method.args.get(keyvars).type;
@@ -338,18 +337,9 @@ public class TypeChecking extends GJDepthFirst<String, String>{
     public String visit(AllocationExpression n, String argu) {
         String type = n.f1.accept(this, " ");
         return type;
-        // System.out.println("AllocationExpression2 "+name+" "+argu);
-        // if(argu!=null && !argu.equals(name)){
-        //     System.out.println("AllocationExpression3");
-        //     if(!symboltable.checkparent(STsymboltable, argu, name)) throw new RuntimeException("AllocationExpression: Expression is type of: "+name+ ", expected "+argu+".");
-        // }
-        // return argu;
     }
 
     public String visit(BracketExpression n, String argu) {
-       // String expr = n.f1.accept(this, argu);
-       // if(!argu.equals(expr)) throw new RuntimeException("BracketExpression: Expression is type of: "+expr+ ", expected "+argu+".");
-       // return expr;
        String expr = n.f1.accept(this, argu);
        return expr;
     }

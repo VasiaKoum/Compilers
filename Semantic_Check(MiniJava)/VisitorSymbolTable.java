@@ -93,7 +93,7 @@ public class VisitorSymbolTable extends GJDepthFirst<String, String>{
             symboltable.scope = "Args";
             n.f4.accept(this, argu);
             int overldresult = symboltable.overloading(symboltable.currentclass, addMethod);
-            if(overldresult == -1) throw new RuntimeException("MethodDeclaration: Overloading: Already declared: function "+type+" "+name);
+            if(overldresult == -2) throw new RuntimeException("MethodDeclaration: Already declared: function "+type+" "+name+" with other args or type method.");
             symboltable.scope = "Vars";
             n.f7.accept(this, argu);
         }

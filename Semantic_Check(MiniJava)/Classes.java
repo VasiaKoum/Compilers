@@ -12,8 +12,6 @@ class Classes{
         this.name = nameinput;
         this.parent = parentinput;
         this.vars = new LinkedHashMap<String, Variables>();
-        // this.varoffset = 0; SymbolTable.varoffset = 0;
-        // this.methodoffset = 0; SymbolTable.methodoffset = 0;
-        // SymbolTable.classname = nameinput;
+        this.varoffset = 0; this.methodoffset = 0;
     }
 }

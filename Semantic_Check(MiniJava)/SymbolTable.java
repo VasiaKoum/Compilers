@@ -158,9 +158,9 @@ class SymbolTable{
         return returned;
     }
 
-    // 0 -> not found similar method, -1-> found similar method NOT SAME, 1-> found similar method AND SAME
+    // -1 -> not found similar method, -2-> found similar method NOT SAME, 0>-> found similar method AND SAME
     public int overloading(Classes nclass, Methods nmethod){
-        int returned = 0;
+        int returned = -1;
         Classes parent;
         Methods parentmethod;
         boolean not_found = false;
@@ -168,9 +168,9 @@ class SymbolTable{
             while(!not_found){
                 if((parentmethod = methods.get(parent.name+nmethod.name))!=null){
                     if(parentmethod.name.equals(nmethod.name) && parentmethod.type.equals(nmethod.type)){
-                        returned = -1;
+                        returned = -2;
                         if(ArgstoString(nmethod.args).equals(ArgstoString(parentmethod.args))){
-                            not_found = true; returned = 1;
+                            not_found = true; returned = parentmethod.offset;
                         }
                     }
                 }
@@ -191,6 +191,57 @@ class SymbolTable{
     }
 
     public void addoffsets(){
+        int i=0;
+        for (String keyclass : classes.keySet()) {
+            if(i!=0){
+                System.out.println("-----------Class "+classes.get(keyclass).name+"-----------");
+                System.out.println("--Variables---");
+                boolean inparent = false;
+                for (String keyvars : classes.get(keyclass).vars.keySet()) {
+                    String parentname;
+                    if((!inparent) && ((parentname = classes.get(keyclass).parent)!=null)){
+                        classes.get(keyclass).varoffset = classes.get(parentname).varoffset;
+                        inparent = true;
+                    }
+                    classes.get(keyclass).vars.get(keyvars).offset = classes.get(keyclass).varoffset;
+                    Variables var = classes.get(keyclass).vars.get(keyvars);
+                    System.out.println(classes.get(keyclass).name+"."+var.name+" : "+var.offset);
+
+                    if(var.type.equals("int")) classes.get(keyclass).varoffset+=4;
+                    else if(var.type.equals("boolean")) classes.get(keyclass).varoffset+=1;
+                    else classes.get(keyclass).varoffset+=8;
+                }
+
+                System.out.println("---Methods---");
+                boolean inmethparent = false;
+                for (String keymethod : methods.keySet()) {
+                    if(methods.get(keymethod).classpar.equals(classes.get(keyclass).name)){
+                        String parentname;
+                        boolean overl = false;
+                        if((parentname = classes.get(keyclass).parent)!=null){
+                            if(!inmethparent) {
+                                classes.get(keyclass).methodoffset = classes.get(parentname).methodoffset;
+                                inmethparent = true;
+                            }
+                            int methodoffset;
+                            if((methodoffset = overloading(classes.get(keyclass), methods.get(keymethod)))>=0){
+                                methods.get(keymethod).offset = methodoffset;
+                                overl = true;
+                            }
+                        }
+                        if(!overl){
+                            methods.get(keymethod).offset = classes.get(keyclass).methodoffset;
+                            Methods method = methods.get(keymethod);
+                            System.out.println(classes.get(keyclass).name+"."+method.name+" : "+method.offset);
+                            classes.get(keyclass).methodoffset+=8;
+                        }
+                    }
+                }
+                System.out.println("\n");
+            }
+            i++;
+        }
+
 
     }
 
@@ -214,4 +265,5 @@ class SymbolTable{
             }
         }
     }
+
 }

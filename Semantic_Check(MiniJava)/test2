@@ -1,65 +1,16 @@
-class TestEx{
+class Factorial{
     public static void main(String[] a){
-        System.out.println(new A().func(10));
+        System.out.println((new Fac().ComputeFac(10)) + (new Fac().ComputeFac(10)));
     }
 }
 
-class D{
-    A a;
-    B b;
-
-    public int here(){
-        a = b;
-        return 4;
-    }
-}
-
-class A{
-    int num;
-    int[] arr;
-    boolean bool;
-
-    public int func(int nums){
-        int num_aux;
-        A obj;
-        {
-            bool=true;
-        }
-        return 2;
-    }
-}
-
-class C{
-    int num;
-    int[] arr;
-    boolean boolis;
-    int vasia;
-
-    public int func(int nums){
-        int num_aux;
-        A obj;
-        {
-            num_aux=2;
-        }
-        return 2;
-    }
-}
-
-class B extends A{
-    int othernum;
-    boolean atik;
-
-    public int vasia(){
-        num = 5;
-        return num;
-    }
-
-    public int func(){
-        int num_aux;
-        A obj;
-        {
-            bool=true;
-        }
-        return 2;
+class Fac extends Factorial{
+    public int ComputeFac(int num){  //TE
+        int num_aux ;
+        if (num < 1)
+            num_aux = 1 ;
+        else
+            num_aux = num * (this.ComputeFac(num-1)) ;
+        return 4 ;
     }
 }

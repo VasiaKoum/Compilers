@@ -6,7 +6,7 @@ import java.io.*;
 class Main{
 	public static void main(String [] args){
 		if(args.length==0){
-			System.err.println("Usage: java Driver <inputFile>");
+			System.err.println("<inputFile> missing");
 			System.exit(-1);
 		}
 		for(int i=0; i<args.length; i++) {
@@ -16,16 +16,16 @@ class Main{
             	flsin = new FileInputStream(args[i]);
             	MiniJavaParser parser = new MiniJavaParser(flsin);
             	Goal root = parser.Goal();
-            	System.err.println("Program parsed successfully!");
 
 				SymbolTable symboltable = new SymbolTable();
 				SymbolTable finalsymboltable = new SymbolTable();
 
 				VisitorSymbolTable visitorsymboltable = new VisitorSymbolTable(symboltable);
 				root.accept(visitorsymboltable, null);
-				System.out.println("TYPE-CHECKING:");
+
 				TypeChecking typechecking = new TypeChecking(symboltable, finalsymboltable);
 				root.accept(typechecking, null);
+
 				finalsymboltable.addoffsets();
 				System.err.println("Program compiled successfully!");
 			}

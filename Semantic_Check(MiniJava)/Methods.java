@@ -1,6 +1,5 @@
 import java.util.*;
 import java.io.*;
-// import Variables;
 
 class Methods{
     String name;
@@ -16,7 +15,6 @@ class Methods{
         this.type = typeinput;
         this.vars = new LinkedHashMap<String, Variables>();
         this.args = new LinkedHashMap<String, Variables>();
-        // SymbolTable.methodoffset+=8; offset = SymbolTable.methodoffset;
-        // SymbolTable.methodname = nameinput;
+        this.offset = 0;
     }
 }
