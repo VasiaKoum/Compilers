@@ -12,25 +12,29 @@ class Main{
 		for(int i=0; i<args.length; i++) {
             FileInputStream flsin = null;
 			try{
-				System.err.println("FILE ["+args[i]+"]");
             	flsin = new FileInputStream(args[i]);
             	MiniJavaParser parser = new MiniJavaParser(flsin);
             	Goal root = parser.Goal();
-
 				SymbolTable symboltable = new SymbolTable();
 				SymbolTable finalsymboltable = new SymbolTable();
-
 				VisitorSymbolTable visitorsymboltable = new VisitorSymbolTable(symboltable);
 				root.accept(visitorsymboltable, null);
-
 				TypeChecking typechecking = new TypeChecking(symboltable, finalsymboltable);
 				root.accept(typechecking, null);
-
 				finalsymboltable.addoffsets();
-				// System.err.println("Program compiled successfully!");
-				
-				GenCode llvmgen = new GenCode(finalsymboltable);
-				// root.accept(llvmgen, null);
+
+				String filename = args[i].replaceFirst("[.][^.]+$", "");
+				filename = filename+".ll";
+				try {
+					FileWriter llfile = new FileWriter(filename);
+					GenCode llvmgen = new GenCode(finalsymboltable, llfile);
+					// root.accept(llvmgen, null);
+					llfile.close();
+				}
+				catch (IOException e) {
+					System.out.println("Error at creating the file: "+filename);
+      				e.printStackTrace();
+				}
 			}
 			catch(RuntimeException ex){
 				System.out.println("Compilation error at:");
