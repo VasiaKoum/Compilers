@@ -104,6 +104,35 @@ class SymbolTable{
         return var;
     }
 
+    public Variables findvar_vtable(String nclass, String nmethod, String nvar){
+        Variables var=null;
+        boolean not_found=true;
+        if(methods.get(nclass+nmethod)!=null){
+            if(methods.get(nclass+nmethod).vars.get(nvar)!=null) var = methods.get(nclass+nmethod).vars.get(nvar);
+            else if(methods.get(nclass+nmethod).args.get(nvar)!=null) var = methods.get(nclass+nmethod).args.get(nvar);
+            else if(classes.get(nclass)!=null){
+                if(classes.get(nclass).vars.get(nvar)!=null) var = classes.get(nclass).vars.get(nvar);
+                else{
+                    String parentname;
+                    if(classes.get(nclass).parent!=null){
+                        parentname = classes.get(nclass).parent;
+                        while(not_found){
+                            if(classes.get(parentname).vars.get(nvar)!=null) {
+                                var = classes.get(parentname).vars.get(nvar);
+                                not_found = false;
+                            }
+                            else{
+                                if(classes.get(parentname).parent!=null) parentname = classes.get(parentname).parent;
+                                else not_found = false;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return var;
+    }
+
     public Methods findmethod(SymbolTable oldst, String nclass, String nmethod, String primname, String methodname){
         Methods method = null;
         Variables var = findvar(nclass, nmethod, primname);
@@ -167,10 +196,13 @@ class SymbolTable{
         if((parent = classes.get(nclass.parent))!=null){
             while(!not_found){
                 if((parentmethod = methods.get(parent.name+nmethod.name))!=null){
-                    if(parentmethod.name.equals(nmethod.name) && parentmethod.type.equals(nmethod.type)){
+                    if(parentmethod.name.equals(nmethod.name)){
                         returned = -2;
-                        if(ArgstoString(nmethod.args).equals(ArgstoString(parentmethod.args))){
-                            not_found = true; returned = parentmethod.offset;
+                        if(parentmethod.type.equals(nmethod.type)){
+                            returned = -2;
+                            if(ArgstoString(nmethod.args).equals(ArgstoString(parentmethod.args))){
+                                not_found = true; returned = parentmethod.offset;
+                            }
                         }
                     }
                 }

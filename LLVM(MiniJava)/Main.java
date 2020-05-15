@@ -28,7 +28,7 @@ class Main{
 				try {
 					FileWriter llfile = new FileWriter(filename);
 					GenCode llvmgen = new GenCode(finalsymboltable, llfile);
-					// root.accept(llvmgen, null);
+					root.accept(llvmgen, null);
 					llfile.close();
 				}
 				catch (IOException e) {

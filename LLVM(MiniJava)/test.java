@@ -24,8 +24,9 @@ class Base {
 
 class Derived extends Base {
 	public int set(int x) {
+		Base b;
 		data = x * 2;
-		return data;
+		return x;
 	}
 
     public int ret(int x) {
@@ -35,13 +36,20 @@ class Derived extends Base {
 }
 
 class Derived2 extends Derived {
+	int a;
+	int b;
+	int c;
+	int d;
 	public int vasia(int x) {
 		data = x * 2;
+		a = b * b;
+		c = d * 2;
 		return data;
 	}
 
-    public int vasvas(int x) {
+    public Base vasvas(int x, int r) {
+		Base b;
         data = x * 2;
-        return data;
+        return b;
     }
 }

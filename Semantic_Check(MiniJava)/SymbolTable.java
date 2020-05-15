@@ -167,10 +167,13 @@ class SymbolTable{
         if((parent = classes.get(nclass.parent))!=null){
             while(!not_found){
                 if((parentmethod = methods.get(parent.name+nmethod.name))!=null){
-                    if(parentmethod.name.equals(nmethod.name) && parentmethod.type.equals(nmethod.type)){
+                    if(parentmethod.name.equals(nmethod.name)){
                         returned = -2;
-                        if(ArgstoString(nmethod.args).equals(ArgstoString(parentmethod.args))){
-                            not_found = true; returned = parentmethod.offset;
+                        if(parentmethod.type.equals(nmethod.type)){
+                            returned = -2;
+                            if(ArgstoString(nmethod.args).equals(ArgstoString(parentmethod.args))){
+                                not_found = true; returned = parentmethod.offset;
+                            }
                         }
                     }
                 }
