@@ -103,7 +103,7 @@ public class TypeChecking extends GJDepthFirst<String, String>{
         String name = n.f0.accept(this, argu);
         String expr;
         Variables idvar;
-        if((idvar = symboltable.findvar(symboltable.currentclass.name, symboltable.currentmethod.name, name))!=null){
+        if((idvar = symboltable.findvar(symboltable.currentclass.name, symboltable.currentmethod.name, name, false))!=null){
             expr = n.f2.accept(this, idvar.type);
             if(!(idvar.type.equals(expr))){
                 if(!symboltable.checkparent(STsymboltable, idvar.type, expr))
@@ -248,7 +248,7 @@ public class TypeChecking extends GJDepthFirst<String, String>{
        String name = n.f0.accept(this, argu);
        String expr, index, type;
        Variables idvar;
-       if((idvar = symboltable.findvar(symboltable.currentclass.name, symboltable.currentmethod.name, name))!=null){
+       if((idvar = symboltable.findvar(symboltable.currentclass.name, symboltable.currentmethod.name, name, false))!=null){
            if(idvar.type.equals("int[]") || idvar.type.equals("boolean[]")){
                type = idvar.type.replace("[]","");
                index = n.f2.accept(this, "int");
@@ -297,7 +297,7 @@ public class TypeChecking extends GJDepthFirst<String, String>{
         String name = n.f0.accept(this, argu);
         Variables idvar;
         if(argu!=null){
-            if((idvar = symboltable.findvar(symboltable.currentclass.name, symboltable.currentmethod.name, name))!=null){
+            if((idvar = symboltable.findvar(symboltable.currentclass.name, symboltable.currentmethod.name, name, false))!=null){
                 name = idvar.type;
             }
             else {

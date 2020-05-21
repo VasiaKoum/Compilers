@@ -5,9 +5,10 @@ import java.io.*;
 
 public class GenCode extends GJDepthFirst<String, String>{
     SymbolTable symboltable;
-    // LinkedHashMap<String, Variables> vtable;
-    String register;
+    String register, currtype;
+    LinkedHashMap<String, HashMap<String, Methods>> vtable;
     FileWriter llfile;
+    Boolean storevar;
     int regnum;
 
     public GenCode(SymbolTable st, FileWriter file){
@@ -15,6 +16,9 @@ public class GenCode extends GJDepthFirst<String, String>{
         this.llfile = file;
         this.regnum = 0;
         this.register = "";
+        this.storevar = false;
+        this.currtype = "";
+        this.vtable = new LinkedHashMap<String, HashMap<String, Methods>>();
         initialize_ll();
     }
 
@@ -23,6 +27,9 @@ public class GenCode extends GJDepthFirst<String, String>{
     public String visit(MainClass n, String argu) {
         write_to_ll("\ndefine i32 @main(){\n");
         String nameclass = n.f1.accept(this, argu);
+        symboltable.currentclass = new Classes(nameclass, null);
+        symboltable.currentmethod = new Methods("main", nameclass, "void");
+
         n.f14.accept(this, argu);
         n.f15.accept(this, argu);
         write_to_ll("\n\tret i32 0\n}\n");
@@ -80,8 +87,8 @@ public class GenCode extends GJDepthFirst<String, String>{
         allocationvars();
         n.f7.accept(this, argu);
         n.f8.accept(this, argu);
-        n.f10.accept(this, type);
-        write_to_ll("\tret "+typeinbytes(type)+" %_"+regnum+"\n}\n");
+        String ret = n.f10.accept(this, type);
+        write_to_ll("\tret "+typeinbytes(type)+" "+ret+"\n}\n");
         return null;
     }
 
@@ -107,17 +114,44 @@ public class GenCode extends GJDepthFirst<String, String>{
         return null;
     }
 
+    public String visit(AssignmentStatement n, String argu) {
+        storevar = false;
+        String reg2 = n.f2.accept(this, " ");
+        storevar = true;
+        String reg1 = n.f0.accept(this, " ");
+        storevar = false;
+        String type = currtype;
+        write_to_ll("\tstore "+currtype+" "+reg2+", "+currtype+"* "+reg1+"\n");
+        return null;
+    }
+
     public String visit(Identifier n, String argu) {
         String name = n.f0.accept(this, argu);
         Variables idvar;
+        String buff="", typevar;
         if(argu!=null){
-            // System.out.println("YES: "+name+" ARGU IS "+argu);
-            if((idvar = symboltable.findvar_vtable(symboltable.currentclass.name, symboltable.currentmethod.name, name))!=null){
-                System.out.println("NO: "+name);
-                register = "%_"+regnum;
-                write_to_ll("\t%_"+regnum+" = load "+typeinbytes(idvar.type)+", "+typeinbytes(idvar.type)+"* %"+idvar.name+"\n");
-                name =  register;
-                regnum+=1;
+            if((idvar = symboltable.findvar(symboltable.currentclass.name, symboltable.currentmethod.name, name, true))!=null){
+                typevar = typeinbytes(idvar.type);
+                Classes findin = symboltable.inclass;
+                if(findin!=null) {
+                    int var = regnum;
+                    int offset = 8+findin.vars.get(idvar.name).offset;
+                    buff = buff+"\t%_"+var+" = getelementptr i8, i8* %this, i32 "+offset+"\n";
+                    regnum+=1;
+                    buff = buff+"\t%_"+regnum+" = bitcast i8* %_"+var+" to "+typeinbytes(idvar.type)+"*\n";
+                    write_to_ll(buff);
+                    typevar = typeinbytes(idvar.type);
+                    register = "%_"+regnum;
+                    name = register;
+                    regnum+=1;
+                }
+                else name = "%"+name;
+                if(!storevar){
+                    write_to_ll("\t%_"+regnum+" = load "+typevar+", "+typevar+"* "+name+"\n");
+                    name = "%_"+regnum;
+                    regnum+=1;
+                }
+                else currtype = typeinbytes(idvar.type);
             }
         }
         return name;
@@ -166,10 +200,47 @@ public class GenCode extends GJDepthFirst<String, String>{
         return ret;
     }
 
+    public String visit(AllocationExpression n, String argu) {
+        String name = n.f1.accept(this, argu), regret=null, buff;
+        HashMap<String, Methods> methodmap = vtable.get(name);
+        int regcast = regnum, regcall = regnum;
+        if(methodmap!=null){
+            int sizeOffset = symboltable.sizeClass(name)+8;
+            buff = "\t%_"+regnum+" = call i8* @calloc(i32 1, i32 "+sizeOffset+")\n";
+            regnum+=1;
+            buff = buff+"\t%_"+regnum+" = bitcast i8* %_"+regcall+" to i8***\n";
+            regcast=regnum; regnum+=1;
+            buff = buff+"\t%_"+regnum+" = getelementptr ["+vtable.get(name).size()+" x i8*], ["+vtable.get(name).size()+" x i8*]* @."+name+"_vtable, i32 0, i32 0\n"+
+            "\tstore i8** %_"+regnum+", i8*** %_"+regcast+"\n";
+            regret = "%_"+regcall;
+            regnum+=1;
+            currtype = "i8*";
+            write_to_ll(buff);
+        }
+        return regret;
+    }
+
+    /**
+     * f0 -> PrimaryExpression()
+     * f1 -> "."
+     * f2 -> Identifier()
+     * f3 -> "("
+     * f4 -> ( ExpressionList() )?
+     * f5 -> ")"
+     */
+    public String visit(MessageSend n, String argu) {
+       String _ret=null;
+       String reg = n.f0.accept(this, argu);
+       n.f2.accept(this, argu);
+       n.f4.accept(this, argu);
+       System.out.println("MessageSend: "+reg);
+       return _ret;
+    }
+
     public String visit(PrintStatement n, String argu) {
         String _ret=null;
-        String regexpr = n.f2.accept(this, argu);
-        write_to_ll("\tcall void (32) @print_int(i32 %"+regexpr+")\n");
+        String regexpr = n.f2.accept(this, " ");
+        write_to_ll("\tcall void (i32) @print_int(i32 "+regexpr+")\n");
         return null;
     }
 
@@ -214,8 +285,6 @@ public class GenCode extends GJDepthFirst<String, String>{
             int argsnum = 1;
             if(!mainclass){
                 buff = "@."+keyclass+"_vtable = global ["+methodmap.size()+" x i8*] [";
-                // List<Methods> sortedmap = new ArrayList<>(methodmap.values());
-                // Collections.sort(sortedmap, Comparator.comparing(Methods::getOffset));
                 for (String keymethod : methodmap.keySet()) {
                     Methods method_ = methodmap.get(keymethod);
                     buff = buff+"\n\ti8* bitcast ("+typeinbytes(method_.type)+" (i8*";
@@ -228,7 +297,6 @@ public class GenCode extends GJDepthFirst<String, String>{
                         method_.vplace = argsnum-1;
                         symboltable.methods.put(keyclass+method_.name, method_);
                     }
-                    // System.out.println(method_.classpar+"."+method_.name+" : "+method_.offset);
                     buff = buff+")* @"+method_.classpar+"."+method_.name+" to i8*)";
                     if(argsnum<methodmap.size()) buff = buff+",";
                     else buff = buff+"\n";
@@ -241,16 +309,13 @@ public class GenCode extends GJDepthFirst<String, String>{
             }
             buff = buff+"]\n\n";
             write_to_ll(buff);
+            vtable.put(keyclass, methodmap);
         }
-        buff = "declare i8* @calloc(i32, i32)\n";
-        buff = buff+"declare i32 @printf(i8*, ...)\n";
-        buff = buff+"declare void @exit(i32)\n\n";
-        buff = buff+"@_cint = constant [4 x i8] c\"%d\\0a\\00\"\n";
-        buff = buff+"@_cOOB = constant [15 x i8] c\"Out of bounds\\0a\\00\"\n";
-        buff = buff+"@_cNSZ = constant [15 x i8] c\"Negative size\\0a\\00\"\n";
-        buff = buff+"\ndefine void @print_int(i32 %i) {\n\t%_str = bitcast [4 x i8]* @_cint to i8*\n\tcall i32 (i8*, ...) @printf(i8* %_str, i32 %i)\n\tret void\n}\n";
-        buff = buff+"\ndefine void @throw_oob() {\n\t%_str = bitcast [15 x i8]* @_cOOB to i8*\n\tcall i32 (i8*, ...) @printf(i8* %_str)\n\tcall void @exit(i32 1)\n\tret void\n}\n";
-        buff = buff+"\ndefine void @throw_nsz() {\n\t%_str = bitcast [15 x i8]* @_cNSZ to i8*\n\tcall i32 (i8*, ...) @printf(i8* %_str)\n\tcall void @exit(i32 1)\n\tret void\n}\n";
+        buff = "declare i8* @calloc(i32, i32)\n"+"declare i32 @printf(i8*, ...)\n"+"declare void @exit(i32)\n\n"+
+        "@_cint = constant [4 x i8] c\"%d\\0a\\00\"\n"+"@_cOOB = constant [15 x i8] c\"Out of bounds\\0a\\00\"\n"+"@_cNSZ = constant [15 x i8] c\"Negative size\\0a\\00\"\n"+
+        "\ndefine void @print_int(i32 %i) {\n\t%_str = bitcast [4 x i8]* @_cint to i8*\n\tcall i32 (i8*, ...) @printf(i8* %_str, i32 %i)\n\tret void\n}\n"+
+        "\ndefine void @throw_oob() {\n\t%_str = bitcast [15 x i8]* @_cOOB to i8*\n\tcall i32 (i8*, ...) @printf(i8* %_str)\n\tcall void @exit(i32 1)\n\tret void\n}\n"+
+        "\ndefine void @throw_nsz() {\n\t%_str = bitcast [15 x i8]* @_cNSZ to i8*\n\tcall i32 (i8*, ...) @printf(i8* %_str)\n\tcall void @exit(i32 1)\n\tret void\n}\n";
         write_to_ll(buff);
     }
 
