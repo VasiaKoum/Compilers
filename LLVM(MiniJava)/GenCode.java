@@ -7,6 +7,7 @@ public class GenCode extends GJDepthFirst<String, String>{
     SymbolTable symboltable;
     String register, currtype;
     LinkedHashMap<String, HashMap<String, Methods>> vtable;
+    Variables var;
     FileWriter llfile;
     Boolean storevar;
     int regnum;
@@ -18,6 +19,7 @@ public class GenCode extends GJDepthFirst<String, String>{
         this.register = "";
         this.storevar = false;
         this.currtype = "";
+        this.var = null;
         this.vtable = new LinkedHashMap<String, HashMap<String, Methods>>();
         initialize_ll();
     }
@@ -40,7 +42,6 @@ public class GenCode extends GJDepthFirst<String, String>{
         String buff;
         String name = n.f1.accept(this, argu);
         if(!"Class".equals(symboltable.scope)){
-            // vtable.put(symboltable.currentclass.name+symboltable.currentmethod.name+name, new Variables());
             buff = "\t%"+name+" = alloca "+typeinbytes(n.f0.accept(this, argu))+"\n";
             write_to_ll(buff);
         }
@@ -116,31 +117,30 @@ public class GenCode extends GJDepthFirst<String, String>{
 
     public String visit(AssignmentStatement n, String argu) {
         storevar = false;
-        String reg2 = n.f2.accept(this, " ");
+        String reg2 = n.f2.accept(this, " "), type1=null;
         storevar = true;
         String reg1 = n.f0.accept(this, " ");
         storevar = false;
-        String type = currtype;
-        write_to_ll("\tstore "+currtype+" "+reg2+", "+currtype+"* "+reg1+"\n");
+        String type = typeinbytes(currtype);
+        write_to_ll("\tstore "+type+" "+reg2+", "+type+"* "+reg1+"\n");
         return null;
     }
 
     public String visit(Identifier n, String argu) {
         String name = n.f0.accept(this, argu);
-        Variables idvar;
         String buff="", typevar;
         if(argu!=null){
-            if((idvar = symboltable.findvar(symboltable.currentclass.name, symboltable.currentmethod.name, name, true))!=null){
-                typevar = typeinbytes(idvar.type);
+            if((var = symboltable.findvar(symboltable.currentclass.name, symboltable.currentmethod.name, name, true))!=null){
+                typevar = typeinbytes(var.type);
                 Classes findin = symboltable.inclass;
                 if(findin!=null) {
-                    int var = regnum;
-                    int offset = 8+findin.vars.get(idvar.name).offset;
-                    buff = buff+"\t%_"+var+" = getelementptr i8, i8* %this, i32 "+offset+"\n";
+                    int varnum = regnum;
+                    int offset = 8+findin.vars.get(var.name).offset;
+                    buff = buff+"\t%_"+varnum+" = getelementptr i8, i8* %this, i32 "+offset+"\n";
                     regnum+=1;
-                    buff = buff+"\t%_"+regnum+" = bitcast i8* %_"+var+" to "+typeinbytes(idvar.type)+"*\n";
+                    buff = buff+"\t%_"+regnum+" = bitcast i8* %_"+varnum+" to "+typeinbytes(var.type)+"*\n";
                     write_to_ll(buff);
-                    typevar = typeinbytes(idvar.type);
+                    typevar = typeinbytes(var.type);
                     register = "%_"+regnum;
                     name = register;
                     regnum+=1;
@@ -151,7 +151,7 @@ public class GenCode extends GJDepthFirst<String, String>{
                     name = "%_"+regnum;
                     regnum+=1;
                 }
-                else currtype = typeinbytes(idvar.type);
+                else currtype = var.type;
             }
         }
         return name;
@@ -214,7 +214,7 @@ public class GenCode extends GJDepthFirst<String, String>{
             "\tstore i8** %_"+regnum+", i8*** %_"+regcast+"\n";
             regret = "%_"+regcall;
             regnum+=1;
-            currtype = "i8*";
+            currtype = name;
             write_to_ll(buff);
         }
         return regret;
@@ -229,12 +229,46 @@ public class GenCode extends GJDepthFirst<String, String>{
      * f5 -> ")"
      */
     public String visit(MessageSend n, String argu) {
-       String _ret=null;
        String reg = n.f0.accept(this, argu);
-       n.f2.accept(this, argu);
+       System.out.println("ti type einai "+currtype);
+       Methods method;
+       int register;
+       String buff = "\t%_"+regnum+" = bitcast i8* "+reg+" to i8***\n";
+       register = regnum; regnum+=1;
+       buff = buff+"\t%_"+regnum+" = load i8**, i8*** %_"+register+"\n";
+       register = regnum; regnum+=1;
+       String name = n.f2.accept(this, null);
+       if(var!=null){
+           if(vtable.get(var.type)!=null){
+               System.out.println("heree  "+var.type+" "+name);
+               method = vtable.get(var.type).get(name);
+               if(method!=null) System.out.println("in var: "+method.offset);
+           }
+       }
+       buff = buff+"\t%_"+regnum+" = getelementptr i8*, i8** %_"+register+", i32 ?"+"\n";
+       register = regnum; regnum+=1;
+       buff = buff+"\t%_"+regnum+" = load i8*, i8** %_"+register+"\n";
+       register = regnum; regnum+=1;
+       buff = buff+"\t%_"+regnum+" = bitcast i8* %_"+register+" to TYPE "+"\n";
+       register = regnum; regnum+=1;
+       buff = buff+"\t%_"+regnum+" = call TYPE %_"+register+"(i8* "+reg+", "+"\n";
+       register = regnum; regnum+=1;
+       write_to_ll(buff);
        n.f4.accept(this, argu);
-       System.out.println("MessageSend: "+reg);
-       return _ret;
+       String returned = "%_"+register;
+       return returned;
+    }
+
+    /**
+     * f0 -> "("
+     * f1 -> Expression()
+     * f2 -> ")"
+     */
+    public String visit(BracketExpression n, String argu) {
+       String _ret=null;
+       String reg = n.f1.accept(this, argu);
+       System.out.println("brackets: "+reg+" currtype "+currtype);
+       return reg;
     }
 
     public String visit(PrintStatement n, String argu) {
@@ -257,7 +291,7 @@ public class GenCode extends GJDepthFirst<String, String>{
         Methods method = symboltable.methods.get(symboltable.currentclass.name+symboltable.currentmethod.name);
         String buff="";
         for (String keyargs : method.args.keySet()) {
-            Variables var = method.args.get(keyargs);
+            var = method.args.get(keyargs);
             String vartype = typeinbytes(var.type);
             buff = buff+"\t%"+var.name+" = alloca "+vartype+"\n";
             buff = buff+"\tstore "+vartype+" %."+var.name+", "+vartype+"* %"+var.name+"\n";
