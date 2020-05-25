@@ -134,11 +134,9 @@ public class GenCode extends GJDepthFirst<String, String>{
                 typevar = typeinbytes(var.type);
                 Classes findin = symboltable.inclass;
                 if(findin!=null) {
-                    int varnum = regnum;
                     int offset = 8+findin.vars.get(var.name).offset;
-                    buff = buff+"\t%_"+varnum+" = getelementptr i8, i8* %this, i32 "+offset+"\n";
-                    regnum+=1;
-                    buff = buff+"\t%_"+regnum+" = bitcast i8* %_"+varnum+" to "+typeinbytes(var.type)+"*\n";
+                    buff = buff+"\t%_"+regnum+" = getelementptr i8, i8* %this, i32 "+offset+"\n"; regnum+=1;
+                    buff = buff+"\t%_"+regnum+" = bitcast i8* %_"+(regnum-1)+" to "+typeinbytes(var.type)+"*\n";
                     write_to_ll(buff);
                     typevar = typeinbytes(var.type);
                     register = "%_"+regnum;
@@ -151,22 +149,19 @@ public class GenCode extends GJDepthFirst<String, String>{
                     name = "%_"+regnum;
                     regnum+=1;
                 }
-                else currtype = var.type;
+                currtype = var.type;
             }
         }
         return name;
     }
 
-    //
-    // public String visit(TrueLiteral n, String argu) {
-    //     n.f0.accept(this, argu);
-    //     return "boolean";
-    // }
-    //
-    // public String visit(FalseLiteral n, String argu) {
-    //     n.f0.accept(this, argu);
-    //     return "boolean";
-    // }
+    public String visit(TrueLiteral n, String argu) {
+        return "1";
+    }
+
+    public String visit(FalseLiteral n, String argu) {
+        return "0";
+    }
 
     public String visit(Expression n, String argu) {
         write_to_ll("\n");
@@ -206,57 +201,57 @@ public class GenCode extends GJDepthFirst<String, String>{
         int regcast = regnum, regcall = regnum;
         if(methodmap!=null){
             int sizeOffset = symboltable.sizeClass(name)+8;
-            buff = "\t%_"+regnum+" = call i8* @calloc(i32 1, i32 "+sizeOffset+")\n";
-            regnum+=1;
-            buff = buff+"\t%_"+regnum+" = bitcast i8* %_"+regcall+" to i8***\n";
-            regcast=regnum; regnum+=1;
+            buff = "\t%_"+regnum+" = call i8* @calloc(i32 1, i32 "+sizeOffset+")\n"; regnum+=1;
+            buff = buff+"\t%_"+regnum+" = bitcast i8* %_"+(regnum-1)+" to i8***\n"; regnum+=1;
             buff = buff+"\t%_"+regnum+" = getelementptr ["+vtable.get(name).size()+" x i8*], ["+vtable.get(name).size()+" x i8*]* @."+name+"_vtable, i32 0, i32 0\n"+
-            "\tstore i8** %_"+regnum+", i8*** %_"+regcast+"\n";
-            regret = "%_"+regcall;
-            regnum+=1;
+            "\tstore i8** %_"+regnum+", i8*** %_"+(regnum-1)+"\n"; regnum+=1;
             currtype = name;
             write_to_ll(buff);
         }
-        return regret;
+        return "%_"+(regnum-3);
+    }
+
+    public String visit(MessageSend n, String argu) {
+       String reg = n.f0.accept(this, argu);
+       Methods method;
+       int register;
+       String buff = "\t%_"+regnum+" = bitcast i8* "+reg+" to i8***\n"; regnum+=1;
+       buff = buff+"\t%_"+regnum+" = load i8**, i8*** %_"+(regnum-1)+"\n"; regnum+=1;
+       String name = n.f2.accept(this, null);
+       int position = vtable.get(currtype).get(name).offset/8;
+       method = vtable.get(currtype).get(name);
+       buff = buff+"\t%_"+regnum+" = getelementptr i8*, i8** %_"+(regnum-1)+", i32 "+position+"\n"; regnum+=1;
+       buff = buff+"\t%_"+regnum+" = load i8*, i8** %_"+(regnum-1)+"\n"; regnum+=1;
+       buff = buff+"\t%_"+regnum+" = bitcast i8* %_"+(regnum-1)+" to "+typeinbytes(method.type)+" ("+argsinbytes(method)+")*"+"\n"; regnum+=1;
+       register = regnum-1;
+       write_to_ll(buff);
+       //f4 -> ( ExpressionList() )?
+       n.f4.accept(this, argu);
+       buff = "\t%_"+regnum+" = call "+typeinbytes(method.type)+" %_"+register+"(i8* "+reg+")\n";
+       register = regnum; regnum+=1;
+       write_to_ll(buff);
+       return "%_"+register;
     }
 
     /**
-     * f0 -> PrimaryExpression()
-     * f1 -> "."
-     * f2 -> Identifier()
-     * f3 -> "("
-     * f4 -> ( ExpressionList() )?
-     * f5 -> ")"
+     * f0 -> Expression()
+     * f1 -> ExpressionTail()
      */
-    public String visit(MessageSend n, String argu) {
-       String reg = n.f0.accept(this, argu);
-       System.out.println("ti type einai "+currtype);
-       Methods method;
-       int register;
-       String buff = "\t%_"+regnum+" = bitcast i8* "+reg+" to i8***\n";
-       register = regnum; regnum+=1;
-       buff = buff+"\t%_"+regnum+" = load i8**, i8*** %_"+register+"\n";
-       register = regnum; regnum+=1;
-       String name = n.f2.accept(this, null);
-       if(var!=null){
-           if(vtable.get(var.type)!=null){
-               System.out.println("heree  "+var.type+" "+name);
-               method = vtable.get(var.type).get(name);
-               if(method!=null) System.out.println("in var: "+method.offset);
-           }
-       }
-       buff = buff+"\t%_"+regnum+" = getelementptr i8*, i8** %_"+register+", i32 ?"+"\n";
-       register = regnum; regnum+=1;
-       buff = buff+"\t%_"+regnum+" = load i8*, i8** %_"+register+"\n";
-       register = regnum; regnum+=1;
-       buff = buff+"\t%_"+regnum+" = bitcast i8* %_"+register+" to TYPE "+"\n";
-       register = regnum; regnum+=1;
-       buff = buff+"\t%_"+regnum+" = call TYPE %_"+register+"(i8* "+reg+", "+"\n";
-       register = regnum; regnum+=1;
-       write_to_ll(buff);
-       n.f4.accept(this, argu);
-       String returned = "%_"+register;
-       return returned;
+    public String visit(ExpressionList n, String argu) {
+       String expr = n.f0.accept(this, argu);
+       String exprt = n.f1.accept(this, argu);
+       System.out.println("ExpressionList: "+expr+" "+expr);
+       return null;
+    }
+
+    /**
+     * f0 -> ","
+     * f1 -> Expression()
+     */
+    public String visit(ExpressionTerm n, String argu) {
+       String expr = n.f1.accept(this, argu);
+       System.out.println("ExpressionTerm: "+expr);
+       return null;
     }
 
     /**
@@ -303,19 +298,11 @@ public class GenCode extends GJDepthFirst<String, String>{
         String buff = "";
         boolean mainclass=true;
         for (String keyclass : symboltable.classes.keySet()) {
-            HashMap<String, Methods> methodmap = new HashMap<String, Methods>();
+            LinkedHashMap<String, Methods> methodmap = new LinkedHashMap<String, Methods>();
             String parentname, nameclass;
             nameclass = symboltable.classes.get(keyclass).name;
             parentname = nameclass;
-            while(parentname!=null){
-                for (String keymethod : symboltable.methods.keySet()) {
-                    if(symboltable.methods.get(keymethod).classpar.equals(symboltable.classes.get(parentname).name)){
-                        Methods method = symboltable.methods.get(keymethod);
-                        if(!methodmap.containsKey(method.name)) methodmap.put(method.name, method);
-                    }
-                }
-                parentname = symboltable.classes.get(parentname).parent;
-            }
+            createVtable(methodmap, parentname, keyclass);
             int argsnum = 1;
             if(!mainclass){
                 buff = "@."+keyclass+"_vtable = global ["+methodmap.size()+" x i8*] [";
@@ -353,6 +340,35 @@ public class GenCode extends GJDepthFirst<String, String>{
         write_to_ll(buff);
     }
 
+    public String argsinbytes(Methods method){
+        String buff="i8*,";
+        for (String keyarg : method.args.keySet()) {
+            buff=buff+typeinbytes(method.args.get(keyarg).type)+",";
+        }
+        buff=buff.substring(0, buff.length()-1);
+        return buff;
+    }
+
+    public void createVtable(LinkedHashMap<String, Methods> methodmap, String parentname, String keyclass){
+        String name;
+        if(parentname!=null) {
+            name=parentname;
+            parentname = symboltable.classes.get(parentname).parent;
+            createVtable(methodmap, parentname, keyclass);
+            for (String keymethod : symboltable.methods.keySet()) {
+                // System.out.println(keyclass+" "+symboltable.methods.get(keymethod).classpar+"."+symboltable.methods.get(keymethod).name);
+                if(symboltable.methods.get(keymethod).classpar.equals(name)){
+                    Methods method = symboltable.methods.get(keymethod);
+                    methodmap.put(method.name, method);
+                }
+            }
+        }
+    }
+
+    // public int functionIndex(String keyclass, String ){
+    //
+    // }
+
     public void write_to_ll(String buffer){
         try{
             llfile.write(buffer);
@@ -362,4 +378,15 @@ public class GenCode extends GJDepthFirst<String, String>{
             e.printStackTrace();
         }
     }
+
+    public void printHasmap(){
+        for (String keyclass : symboltable.classes.keySet()) {
+            HashMap<String, Methods> methodmap = vtable.get(keyclass);
+            for (String keymethod : methodmap.keySet()) {
+                Methods method_ = methodmap.get(keymethod);
+                System.out.println(keyclass+" => "+method_.classpar+"."+method_.name+" : "+method_.offset);
+            }
+        }
+    }
+
 }

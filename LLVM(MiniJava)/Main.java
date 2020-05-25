@@ -29,6 +29,7 @@ class Main{
 					FileWriter llfile = new FileWriter(filename);
 					GenCode llvmgen = new GenCode(finalsymboltable, llfile);
 					root.accept(llvmgen, null);
+					// llvmgen.printHasmap();
 					llfile.close();
 				}
 				catch (IOException e) {

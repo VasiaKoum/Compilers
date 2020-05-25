@@ -2,8 +2,10 @@ class test1{
 	public static void main(String[] r) {
         B b;
         A a;
-        a = ((new B().returnB()).returnA()).returnA();
+        a = ((new B().returnB()).returnB()).returnA();
 
+        //404;
+        a = a.returnA();
 	}
 }
 

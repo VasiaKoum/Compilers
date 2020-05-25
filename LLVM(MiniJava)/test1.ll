@@ -41,31 +41,20 @@ define i32 @main(){
 	%b = alloca i8*
 	%a = alloca i8*
 
-
-
 	%_0 = call i8* @calloc(i32 1, i32 21)
 	%_1 = bitcast i8* %_0 to i8***
 	%_2 = getelementptr [2 x i8*], [2 x i8*]* @.B_vtable, i32 0, i32 0
 	store i8** %_2, i8*** %_1
-	%_3 = bitcast i8* %_0 to i8***
-	%_4 = load i8**, i8*** %_3
-	%_5 = getelementptr i8*, i8** %_4, i32 ?
-	%_6 = load i8*, i8** %_5
-	%_7 = bitcast i8* %_6 to TYPE 
-	%_8 = call TYPE %_7(i8* %_0, 
-	%_9 = bitcast i8* %_8 to i8***
-	%_10 = load i8**, i8*** %_9
-	%_11 = getelementptr i8*, i8** %_10, i32 ?
-	%_12 = load i8*, i8** %_11
-	%_13 = bitcast i8* %_12 to TYPE 
-	%_14 = call TYPE %_13(i8* %_8, 
-	%_15 = bitcast i8* %_14 to i8***
-	%_16 = load i8**, i8*** %_15
-	%_17 = getelementptr i8*, i8** %_16, i32 ?
-	%_18 = load i8*, i8** %_17
-	%_19 = bitcast i8* %_18 to TYPE 
-	%_20 = call TYPE %_19(i8* %_14, 
-	store i8* %_20, i8** %a
+	store i8* %_0, i8** %a
+
+	%_3 = load i8*, i8** %a
+	%_4 = bitcast i8* %_3 to i8***
+	%_5 = load i8**, i8*** %_4
+	%_6 = getelementptr i8*, i8** %_5, i32 ?
+	%_7 = load i8*, i8** %_6
+	%_8 = bitcast i8* %_7 to TYPE 
+	%_9 = call TYPE %_8(i8* %_3, 
+	store i8* %_9, i8** %a
 
 	ret i32 0
 }
