@@ -1,11 +1,24 @@
 class Simple {
 	public static void main(String[] a) {
 	    int x;
-        int[] y;
-        boolean k;
 
         x = 10;
 
-	    System.out.println(x);
+        if (x < 2)
+			if (x < 2)
+				System.out.println(0);
+			else
+				if (x < 2)
+					if (x < 2)
+						System.out.println(0);
+					else
+						if (x < 2)
+							System.out.println(0);
+						else
+							System.out.println(1);
+				else
+					System.out.println(1);
+	    else
+	        System.out.println(1);
 	}
 }

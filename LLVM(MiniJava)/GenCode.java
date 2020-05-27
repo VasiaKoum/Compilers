@@ -5,20 +5,26 @@ import java.io.*;
 
 public class GenCode extends GJDepthFirst<String, String>{
     SymbolTable symboltable;
-    String register, currtype;
+    String register, currtype, exprlist, endlabel;
     LinkedHashMap<String, HashMap<String, Methods>> vtable;
     Variables var;
     FileWriter llfile;
     Boolean storevar;
-    int regnum;
+    int regnum, ifnum, ifs;
+
+    // clang -o out1 ex.ll
 
     public GenCode(SymbolTable st, FileWriter file){
         this.symboltable = st;
         this.llfile = file;
         this.regnum = 0;
+        this.ifnum = 0;
         this.register = "";
         this.storevar = false;
         this.currtype = "";
+        this.exprlist = "";
+        this.endlabel = "";
+        this.ifs = 0;
         this.var = null;
         this.vtable = new LinkedHashMap<String, HashMap<String, Methods>>();
         initialize_ll();
@@ -31,7 +37,7 @@ public class GenCode extends GJDepthFirst<String, String>{
         String nameclass = n.f1.accept(this, argu);
         symboltable.currentclass = new Classes(nameclass, null);
         symboltable.currentmethod = new Methods("main", nameclass, "void");
-
+        symboltable.scope = "Vars";
         n.f14.accept(this, argu);
         n.f15.accept(this, argu);
         write_to_ll("\n\tret i32 0\n}\n");
@@ -126,6 +132,55 @@ public class GenCode extends GJDepthFirst<String, String>{
         return null;
     }
 
+    /**
+     * f2 -> Expression()
+     * f4 -> Statement()
+
+     * f6 -> Statement()
+     */
+    public String visit(IfStatement n, String argu) {
+        String _ret=null;
+        String buff;
+        String iflabel="if_"+ifnum;
+        String elselabel="else_"+ifnum;
+        String oldend = endlabel;
+        endlabel="fi_"+ifnum;
+        ifnum+=1; ifs+=1;
+        if(ifs==1) oldend=endlabel;
+        String expr=n.f2.accept(this, argu);
+        write_to_ll("\tbr i1 "+expr+", label %"+iflabel+", label %"+elselabel+"\n\n");
+        write_to_ll(iflabel+":\n");
+        String end1=endlabel;
+        n.f4.accept(this, argu);
+        endlabel=end1;
+        write_to_ll("\tbr label %"+endlabel+"\n\n"+elselabel+":\n");
+        String end2=endlabel;
+        n.f6.accept(this, argu);
+        endlabel=end2;
+        ifs-=1;
+        if(ifs>0) buff="\n"+endlabel+":\n"+"\tbr label %"+oldend+"\n";
+        else buff="\n"+endlabel+":\n";
+        write_to_ll(buff);
+        return _ret;
+    }
+
+    /**
+     * f0 -> "while"
+     * f1 -> "("
+     * f2 -> Expression()
+     * f3 -> ")"
+     * f4 -> Statement()
+     */
+    public String visit(WhileStatement n, String argu) {
+        String _ret=null;
+        n.f0.accept(this, argu);
+        n.f1.accept(this, argu);
+        n.f2.accept(this, argu);
+        n.f3.accept(this, argu);
+        n.f4.accept(this, argu);
+        return _ret;
+    }
+
     public String visit(Identifier n, String argu) {
         String name = n.f0.accept(this, argu);
         String buff="", typevar;
@@ -156,16 +211,27 @@ public class GenCode extends GJDepthFirst<String, String>{
     }
 
     public String visit(TrueLiteral n, String argu) {
+        currtype = "boolean";
         return "1";
     }
 
     public String visit(FalseLiteral n, String argu) {
+        currtype = "boolean";
         return "0";
     }
 
-    public String visit(Expression n, String argu) {
-        write_to_ll("\n");
-        return n.f0.accept(this, argu);
+    public String visit(IntegerLiteral n, String argu) {
+        currtype = "int";
+       return n.f0.accept(this, argu);
+    }
+
+    public String visit(CompareExpression n, String argu) {
+        String reg1 = n.f0.accept(this, "int");
+        String reg2 = n.f2.accept(this, "int");
+        String ret = "%_"+regnum;
+        write_to_ll( "\t%_"+regnum+" = icmp slt i32 "+reg1+", "+reg2+"\n");
+        regnum+=1;
+        return ret;
     }
 
     public String visit(PlusExpression n, String argu) {
@@ -211,6 +277,18 @@ public class GenCode extends GJDepthFirst<String, String>{
         return "%_"+(regnum-3);
     }
 
+    /**
+     * f0 -> "!"
+     * f1 -> Clause()
+     */
+    public String visit(NotExpression n, String argu) {
+        String reg=n.f1.accept(this, "boolean");
+        String ret = "%_"+regnum;
+        write_to_ll( "\t%_"+regnum+" = xor il 1, "+reg+"\n");
+        regnum+=1;
+        return ret;
+    }
+
     public String visit(MessageSend n, String argu) {
        String reg = n.f0.accept(this, argu);
        Methods method;
@@ -220,38 +298,37 @@ public class GenCode extends GJDepthFirst<String, String>{
        String name = n.f2.accept(this, null);
        int position = vtable.get(currtype).get(name).offset/8;
        method = vtable.get(currtype).get(name);
+
        buff = buff+"\t%_"+regnum+" = getelementptr i8*, i8** %_"+(regnum-1)+", i32 "+position+"\n"; regnum+=1;
        buff = buff+"\t%_"+regnum+" = load i8*, i8** %_"+(regnum-1)+"\n"; regnum+=1;
        buff = buff+"\t%_"+regnum+" = bitcast i8* %_"+(regnum-1)+" to "+typeinbytes(method.type)+" ("+argsinbytes(method)+")*"+"\n"; regnum+=1;
        register = regnum-1;
        write_to_ll(buff);
-       //f4 -> ( ExpressionList() )?
+
        n.f4.accept(this, argu);
-       buff = "\t%_"+regnum+" = call "+typeinbytes(method.type)+" %_"+register+"(i8* "+reg+")\n";
+
+       String[] args_array = (reg+","+exprlist).split(",");
+       String[] types_array = argsinbytes(method).split(",");
+       String printargs = argswithtypes(types_array, args_array);
+
+       buff = "\t%_"+regnum+" = call "+typeinbytes(method.type)+" %_"+register+"("+printargs+")\n";
        register = regnum; regnum+=1;
        write_to_ll(buff);
+       currtype=method.type;
        return "%_"+register;
     }
 
-    /**
-     * f0 -> Expression()
-     * f1 -> ExpressionTail()
-     */
     public String visit(ExpressionList n, String argu) {
-       String expr = n.f0.accept(this, argu);
-       String exprt = n.f1.accept(this, argu);
-       System.out.println("ExpressionList: "+expr+" "+expr);
-       return null;
+        String expr = n.f0.accept(this, argu);
+        exprlist=expr;
+        n.f1.accept(this, argu);
+        return null;
     }
 
-    /**
-     * f0 -> ","
-     * f1 -> Expression()
-     */
     public String visit(ExpressionTerm n, String argu) {
-       String expr = n.f1.accept(this, argu);
-       System.out.println("ExpressionTerm: "+expr);
-       return null;
+        String expr = n.f1.accept(this, argu);
+        exprlist = exprlist+","+expr;
+        return null;
     }
 
     /**
@@ -260,10 +337,16 @@ public class GenCode extends GJDepthFirst<String, String>{
      * f2 -> ")"
      */
     public String visit(BracketExpression n, String argu) {
-       String _ret=null;
-       String reg = n.f1.accept(this, argu);
-       System.out.println("brackets: "+reg+" currtype "+currtype);
-       return reg;
+        String _ret=null;
+        String reg = n.f1.accept(this, argu);
+        System.out.println("brackets: "+reg+" currtype "+currtype);
+        return reg;
+    }
+
+    public String visit(Expression n, String argu) {
+        String returned = n.f0.accept(this, argu);
+        write_to_ll("\n");
+        return returned;
     }
 
     public String visit(PrintStatement n, String argu) {
@@ -279,6 +362,17 @@ public class GenCode extends GJDepthFirst<String, String>{
         else if("boolean".equals(type)) returned = "i1";
         else if("int[]".equals(type)) returned = "i32*";
         else returned = "i8*";
+        return returned;
+    }
+
+    public String argswithtypes(String[] types, String[] args){
+        String returned="";
+        if(types.length==args.length){
+            for(int i=0; i<types.length; i++){
+                returned = returned+types[i]+" "+args[i]+",";
+            }
+        }
+        if(returned.length()>0) returned=returned.substring(0, returned.length()-1);
         return returned;
     }
 
@@ -364,10 +458,6 @@ public class GenCode extends GJDepthFirst<String, String>{
             }
         }
     }
-
-    // public int functionIndex(String keyclass, String ){
-    //
-    // }
 
     public void write_to_ll(String buffer){
         try{

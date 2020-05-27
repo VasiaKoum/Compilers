@@ -44,12 +44,12 @@ class Element {
 	    aux02 = other.GetSalary();
 	    if (!(this.Compare(aux02,Salary))) ret_val = false ;
 	    else
-		if (Married)
-		    if (!(other.GetMarried())) ret_val = false;
-		    else nt = 0 ;
-		else
-		    if (other.GetMarried()) ret_val = false;
-		    else nt = 0 ;
+    		if (Married)
+    		    if (!(other.GetMarried())) ret_val = false;
+    		    else nt = 0 ;
+    		else
+    		    if (other.GetMarried()) ret_val = false;
+    		    else nt = 0 ;
 	}
 
 	return ret_val ;

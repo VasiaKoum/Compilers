@@ -1,25 +1,13 @@
 @.Classes_vtable = global [0 x i8*] []
 
-@.Base_vtable = global [3 x i8*] [
+@.Base_vtable = global [2 x i8*] [
 	i8* bitcast (i32 (i8*, i32)* @Base.set to i8*),
-	i8* bitcast (i1 (i8*)* @Base.pou to i8*),
-	i8* bitcast (i32 (i8*, i32, i32)* @Base.get to i8*)
+	i8* bitcast (i32 (i8*)* @Base.get to i8*)
 ]
 
-@.Derived_vtable = global [5 x i8*] [
+@.Derived_vtable = global [2 x i8*] [
 	i8* bitcast (i32 (i8*, i32)* @Derived.set to i8*),
-	i8* bitcast (i1 (i8*)* @Base.pou to i8*),
-	i8* bitcast (i32 (i8*, i32, i32)* @Base.get to i8*),
-	i8* bitcast (i32 (i8*)* @Derived.edw to i8*),
-	i8* bitcast (i32 (i8*)* @Derived.comp to i8*)
-]
-
-@.Vasia_vtable = global [5 x i8*] [
-	i8* bitcast (i32 (i8*, i32)* @Derived.set to i8*),
-	i8* bitcast (i1 (i8*)* @Base.pou to i8*),
-	i8* bitcast (i32 (i8*, i32, i32)* @Base.get to i8*),
-	i8* bitcast (i32 (i8*)* @Derived.edw to i8*),
-	i8* bitcast (i32 (i8*)* @Derived.comp to i8*)
+	i8* bitcast (i32 (i8*)* @Base.get to i8*)
 ]
 
 declare i8* @calloc(i32, i32)
@@ -51,19 +39,20 @@ define void @throw_nsz() {
 }
 
 define i32 @main(){
-
+	%b = alloca i8*
+	%d = alloca i8*
 	%_0 = call i8* @calloc(i32 1, i32 12)
 	%_1 = bitcast i8* %_0 to i8***
-	%_2 = getelementptr [3 x i8*], [3 x i8*]* @.Base_vtable, i32 0, i32 0
+	%_2 = getelementptr [2 x i8*], [2 x i8*]* @.Base_vtable, i32 0, i32 0
 	store i8** %_2, i8*** %_1
-	store i8* %_0, i8** %b
 
+	store i8* %_0, i8** %b
 	%_3 = call i8* @calloc(i32 1, i32 12)
 	%_4 = bitcast i8* %_3 to i8***
-	%_5 = getelementptr [5 x i8*], [5 x i8*]* @.Derived_vtable, i32 0, i32 0
+	%_5 = getelementptr [2 x i8*], [2 x i8*]* @.Derived_vtable, i32 0, i32 0
 	store i8** %_5, i8*** %_4
-	store i8* %_3, i8** %d
 
+	store i8* %_3, i8** %d
 	%_6 = load i8*, i8** %b
 	%_7 = bitcast i8* %_6 to i8***
 	%_8 = load i8**, i8*** %_7
@@ -71,23 +60,22 @@ define i32 @main(){
 	%_10 = load i8*, i8** %_9
 	%_11 = bitcast i8* %_10 to i32 (i8*,i32)*
 
-	%_12 = call i32 %_11(i8* %_6)
+	%_12 = call i32 %_11(i8* %_6,i32 1)
+
 	call void (i32) @print_int(i32 %_12)
-
 	%_13 = load i8*, i8** %d
-	store i8* %_13, i8** %b
 
+	store i8* %_13, i8** %b
 	%_14 = load i8*, i8** %b
 	%_15 = bitcast i8* %_14 to i8***
 	%_16 = load i8**, i8*** %_15
-	%_17 = getelementptr i8*, i8** %_16, i32 2
+	%_17 = getelementptr i8*, i8** %_16, i32 0
 	%_18 = load i8*, i8** %_17
-	%_19 = bitcast i8* %_18 to i32 (i8*,i32,i32)*
+	%_19 = bitcast i8* %_18 to i32 (i8*,i32)*
 
-	%_20 = load i32, i32* %r
+	%_20 = call i32 %_19(i8* %_14,i32 3)
 
-	%_21 = call i32 %_19(i8* %_14)
-	call void (i32) @print_int(i32 %_21)
+	call void (i32) @print_int(i32 %_20)
 
 	ret i32 0
 }
@@ -95,57 +83,38 @@ define i32 @main(){
 define i32 @Base.set(i8* %this, i32 %.x) {
 	%x = alloca i32
 	store i32 %.x, i32* %x
-
 	%_0 = load i32, i32* %x
+
 	%_1 = getelementptr i8, i8* %this, i32 8
 	%_2 = bitcast i8* %_1 to i32*
 	store i32 %_0, i32* %_2
-
 	%_3 = getelementptr i8, i8* %this, i32 8
 	%_4 = bitcast i8* %_3 to i32*
 	%_5 = load i32, i32* %_4
+
 	ret i32 %_5
 }
 
-define i1 @Base.pou(i8* %this) {
-
-	ret i1 1
-}
-
-define i32 @Base.get(i8* %this, i32 %.x, i32 %.y) {
-	%x = alloca i32
-	store i32 %.x, i32* %x
-	%y = alloca i32
-	store i32 %.y, i32* %y
-
+define i32 @Base.get(i8* %this) {
 	%_0 = getelementptr i8, i8* %this, i32 8
 	%_1 = bitcast i8* %_0 to i32*
 	%_2 = load i32, i32* %_1
+
 	ret i32 %_2
 }
 
 define i32 @Derived.set(i8* %this, i32 %.x) {
 	%x = alloca i32
 	store i32 %.x, i32* %x
-
 	%_0 = load i32, i32* %x
 	%_1 = mul i32 %_0, 2
+
 	%_2 = getelementptr i8, i8* %this, i32 8
 	%_3 = bitcast i8* %_2 to i32*
 	store i32 %_1, i32* %_3
-
 	%_4 = getelementptr i8, i8* %this, i32 8
 	%_5 = bitcast i8* %_4 to i32*
 	%_6 = load i32, i32* %_5
+
 	ret i32 %_6
-}
-
-define i32 @Derived.edw(i8* %this) {
-
-	ret i32 3
-}
-
-define i32 @Derived.comp(i8* %this) {
-
-	ret i32 6
 }
