@@ -5,26 +5,21 @@ import java.io.*;
 
 public class GenCode extends GJDepthFirst<String, String>{
     SymbolTable symboltable;
-    String register, currtype, exprlist, endlabel;
+    String register, currtype, exprlist;
     LinkedHashMap<String, HashMap<String, Methods>> vtable;
     Variables var;
     FileWriter llfile;
     Boolean storevar;
-    int regnum, ifnum, ifs;
+    int regnum, ifnum, whilenum, andnum, indexnum;
 
     // clang -o out1 ex.ll
 
     public GenCode(SymbolTable st, FileWriter file){
         this.symboltable = st;
         this.llfile = file;
-        this.regnum = 0;
-        this.ifnum = 0;
-        this.register = "";
+        this.regnum = 0;    this.ifnum = 0; this.whilenum = 0;
+        this.register = ""; this.currtype = ""; this.exprlist = "";
         this.storevar = false;
-        this.currtype = "";
-        this.exprlist = "";
-        this.endlabel = "";
-        this.ifs = 0;
         this.var = null;
         this.vtable = new LinkedHashMap<String, HashMap<String, Methods>>();
         initialize_ll();
@@ -42,16 +37,6 @@ public class GenCode extends GJDepthFirst<String, String>{
         n.f15.accept(this, argu);
         write_to_ll("\n\tret i32 0\n}\n");
         return null;
-    }
-
-    public String visit(VarDeclaration n, String argu) {
-        String buff;
-        String name = n.f1.accept(this, argu);
-        if(!"Class".equals(symboltable.scope)){
-            buff = "\t%"+name+" = alloca "+typeinbytes(n.f0.accept(this, argu))+"\n";
-            write_to_ll(buff);
-        }
-        return name;
     }
 
     public String visit(ClassDeclaration n, String argu) {
@@ -74,15 +59,17 @@ public class GenCode extends GJDepthFirst<String, String>{
         return null;
     }
 
-    /**
-     * f1 -> Type()
-     * f2 -> Identifier()
-     * f4 -> ( FormalParameterList() )?
-     * f7 -> ( VarDeclaration() )*
-     * f8 -> ( Statement() )*
-     * f9 -> "return"
-     * f10 -> Expression()
-     */
+    public String visit(VarDeclaration n, String argu) {
+        String buff;
+        String name = n.f1.accept(this, argu);
+        // System.out.println("VarDeclaration: "+symboltable.currentclass.name+"."+symboltable.currentmethod.name+" "+name+" "+argu+" "+symboltable.scope);
+        if(!"Class".equals(symboltable.scope)){
+            buff = "\t%"+name+" = alloca "+typeinbytes(n.f0.accept(this, argu))+"\n";
+            write_to_ll(buff);
+        }
+        return name;
+    }
+
     public String visit(MethodDeclaration n, String argu) {
         String name = n.f2.accept(this, argu);
         String type = n.f1.accept(this, argu);
@@ -92,6 +79,7 @@ public class GenCode extends GJDepthFirst<String, String>{
         n.f4.accept(this, argu);
         write_to_ll(") {\n");
         allocationvars();
+        symboltable.scope = "Args";
         n.f7.accept(this, argu);
         n.f8.accept(this, argu);
         String ret = n.f10.accept(this, type);
@@ -121,108 +109,118 @@ public class GenCode extends GJDepthFirst<String, String>{
         return null;
     }
 
+    public String visit(BooleanArrayType n, String argu) {
+        return n.f0.accept(this, argu)+"[]";
+    }
+
+    public String visit(IntegerArrayType n, String argu) {
+        return n.f0.accept(this, argu)+"[]";
+    }
+
+    // public String visit(Statement n, String argu) {
+    //     return n.f0.accept(this, argu);
+    // }
+
+    // ----------------S T A T E M E N T S----------------
+
     public String visit(AssignmentStatement n, String argu) {
         storevar = false;
-        String reg2 = n.f2.accept(this, " "), type1=null;
+        String reg2 = n.f2.accept(this, "var"), type1=null;
         storevar = true;
-        String reg1 = n.f0.accept(this, " ");
+        String reg1 = n.f0.accept(this, "var");
         storevar = false;
         String type = typeinbytes(currtype);
+        // System.out.println( symboltable.currentclass.name+" "+symboltable.currentmethod.name+" "+type+" "+reg1+" = "+reg2);
         write_to_ll("\tstore "+type+" "+reg2+", "+type+"* "+reg1+"\n");
         return null;
     }
 
-    /**
-     * f2 -> Expression()
-     * f4 -> Statement()
-
-     * f6 -> Statement()
-     */
-    public String visit(IfStatement n, String argu) {
-        String _ret=null;
-        String buff;
-        String iflabel="if_"+ifnum;
-        String elselabel="else_"+ifnum;
-        String oldend = endlabel;
-        endlabel="fi_"+ifnum;
-        ifnum+=1; ifs+=1;
-        if(ifs==1) oldend=endlabel;
-        String expr=n.f2.accept(this, argu);
-        write_to_ll("\tbr i1 "+expr+", label %"+iflabel+", label %"+elselabel+"\n\n");
-        write_to_ll(iflabel+":\n");
-        String end1=endlabel;
-        n.f4.accept(this, argu);
-        endlabel=end1;
-        write_to_ll("\tbr label %"+endlabel+"\n\n"+elselabel+":\n");
-        String end2=endlabel;
-        n.f6.accept(this, argu);
-        endlabel=end2;
-        ifs-=1;
-        if(ifs>0) buff="\n"+endlabel+":\n"+"\tbr label %"+oldend+"\n";
-        else buff="\n"+endlabel+":\n";
+    public String visit(ArrayAssignmentStatement n, String argu) {
+        indexnum+=1;
+        String indexok="index_ok_"+(indexnum-1);
+        String indexerror="index_error_"+(indexnum-1);
+        String reg = n.f0.accept(this, "array"), buff;
+        String type = typeinbytes(currtype.substring(0, currtype.length()-2));
+        write_to_ll("\t%_"+regnum+" = load "+type+", "+type+"* "+reg+"\n");
+        int regtmp = regnum; regnum+=1;
+        String expr1 = n.f2.accept(this, argu);
+        buff="\t%_"+regnum+" = icmp sge i32 "+expr1+", "+0+"\n"+
+        "\t%_"+(regnum+1)+" = icmp slt i32 "+expr1+", %_"+regtmp+"\n"+
+        "\t%_"+(regnum+2)+" = and i1 %_"+regnum+", %_"+(regnum+1)+"\n"+
+        "\tbr i1 %_"+(regnum+2)+", label %"+indexok+", label %"+indexerror+"\n"+
+        "\n"+indexerror+":\n"+"\tcall void @throw_oob()\n\tbr label %"+indexok+"\n"+
+        "\n"+indexok+":\n";
         write_to_ll(buff);
-        return _ret;
+        regnum+=3;
+        String expr2 = n.f5.accept(this, argu);
+        buff="\t%_"+regnum+" = add i32 1, "+expr1+"\n"+
+        "\t%_"+(regnum+1)+" = getelementptr "+type+", "+type+"* "+reg+", i32 %_"+regnum+"\n"+
+        "\tstore "+type+" "+expr2+", "+type+"* %_"+(regnum+1)+"\n";
+        write_to_ll(buff);
+        regnum+=2;
+        return null;
     }
 
-    /**
-     * f0 -> "while"
-     * f1 -> "("
-     * f2 -> Expression()
-     * f3 -> ")"
-     * f4 -> Statement()
-     */
+    public String visit(IfStatement n, String argu) {
+        ifnum+=1;
+        String iflabel="if_"+(ifnum-1);
+        String elselabel="else_"+(ifnum-1);
+        String endlabel="fi_"+(ifnum-1);
+        String expr=n.f2.accept(this, "var");
+
+        write_to_ll("\tbr i1 "+expr+", label %"+iflabel+", label %"+elselabel+"\n\n"+iflabel+":\n");
+        n.f4.accept(this, "var");
+        write_to_ll("\tbr label %"+endlabel+"\n\n"+elselabel+":\n");
+        n.f6.accept(this, "var");
+        write_to_ll("\tbr label %"+endlabel+"\n\n"+endlabel+":\n");
+        return null;
+    }
+
     public String visit(WhileStatement n, String argu) {
+        whilenum+=1;
+        String whilelabel="while_"+(whilenum-1);
+        String dolabel="do_"+(whilenum-1);
+        String donelabel="done_"+(whilenum-1);
+
+        write_to_ll("\tbr label %"+whilelabel+"\n\n"+whilelabel+":\n");
+        String expr=n.f2.accept(this, "expr");
+        write_to_ll("\tbr i1 "+expr+", label %"+dolabel+", label %"+donelabel+"\n\n"+dolabel+":\n");
+        n.f4.accept(this, "expr");
+        write_to_ll("\tbr label %"+whilelabel+"\n\n"+donelabel+":\n");
+        return null;
+    }
+
+    public String visit(PrintStatement n, String argu) {
         String _ret=null;
-        n.f0.accept(this, argu);
-        n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
-        n.f3.accept(this, argu);
-        n.f4.accept(this, argu);
-        return _ret;
+        String regexpr = n.f2.accept(this, " ");
+        write_to_ll("\tcall void (i32) @print_int(i32 "+regexpr+")\n");
+        return null;
     }
 
-    public String visit(Identifier n, String argu) {
-        String name = n.f0.accept(this, argu);
-        String buff="", typevar;
-        if(argu!=null){
-            if((var = symboltable.findvar(symboltable.currentclass.name, symboltable.currentmethod.name, name, true))!=null){
-                typevar = typeinbytes(var.type);
-                Classes findin = symboltable.inclass;
-                if(findin!=null) {
-                    int offset = 8+findin.vars.get(var.name).offset;
-                    buff = buff+"\t%_"+regnum+" = getelementptr i8, i8* %this, i32 "+offset+"\n"; regnum+=1;
-                    buff = buff+"\t%_"+regnum+" = bitcast i8* %_"+(regnum-1)+" to "+typeinbytes(var.type)+"*\n";
-                    write_to_ll(buff);
-                    typevar = typeinbytes(var.type);
-                    register = "%_"+regnum;
-                    name = register;
-                    regnum+=1;
-                }
-                else name = "%"+name;
-                if(!storevar){
-                    write_to_ll("\t%_"+regnum+" = load "+typevar+", "+typevar+"* "+name+"\n");
-                    name = "%_"+regnum;
-                    regnum+=1;
-                }
-                currtype = var.type;
-            }
-        }
-        return name;
+    // ----------------E X P R E S S I O N S----------------
+
+    public String visit(Expression n, String argu) {
+        String returned = n.f0.accept(this, argu);
+        write_to_ll("\n");
+        return returned;
     }
 
-    public String visit(TrueLiteral n, String argu) {
-        currtype = "boolean";
-        return "1";
-    }
+    public String visit(AndExpression n, String argu) {
+        andnum+=1;
+        String ret=null, reg1, reg2;
+        String andfalse="and_false_"+(andnum-1);
+        String andright="and_right_"+(andnum-1);
+        String andtmp="and_tmp_"+(andnum-1);
+        String andexit="and_exit_"+(andnum-1);
 
-    public String visit(FalseLiteral n, String argu) {
-        currtype = "boolean";
-        return "0";
-    }
-
-    public String visit(IntegerLiteral n, String argu) {
-        currtype = "int";
-       return n.f0.accept(this, argu);
+        reg1=n.f0.accept(this, "boolean");
+        write_to_ll("\tbr i1 "+reg1+", label %"+andright+", label %"+andfalse+
+        "\n\n"+andfalse+":\n\tbr label %"+andtmp+"\n\n"+andright+":\n");
+        reg2=n.f2.accept(this, "boolean");
+        write_to_ll("\tbr label %"+andtmp+"\n\n"+andtmp+":\n\tbr label %"+andexit+
+        "\n\n"+andexit+":\n"+"\t%_"+regnum+" = phi i1 [ 0, %"+andfalse+" ], [ "+reg2+", %"+andtmp+" ]\n");
+        ret="%_"+regnum; regnum+=1;
+        return ret;
     }
 
     public String visit(CompareExpression n, String argu) {
@@ -261,6 +259,175 @@ public class GenCode extends GJDepthFirst<String, String>{
         return ret;
     }
 
+    public String visit(ArrayLookup n, String argu) {
+        String ret;
+        indexnum+=1;
+        String indexok="index_ok_"+(indexnum-1);
+        String indexerror="index_error_"+(indexnum-1);
+        //ERROR HERE
+        String reg = n.f0.accept(this, "array"), buff;
+        String type = typeinbytes(currtype.substring(0, currtype.length()-2));
+        write_to_ll("\t%_"+regnum+" = load "+type+", "+type+"* "+reg+"\n");
+        int regtmp = regnum; regnum+=1;
+        String expr1 = n.f2.accept(this, argu);
+        buff="\t%_"+regnum+" = icmp sge i32 "+expr1+", "+0+"\n"+
+        "\t%_"+(regnum+1)+" = icmp slt i32 "+expr1+", %_"+regtmp+"\n"+
+        "\t%_"+(regnum+2)+" = and i1 %_"+regnum+", %_"+(regnum+1)+"\n"+
+        "\tbr i1 %_"+(regnum+2)+", label %"+indexok+", label %"+indexerror+"\n"+
+        "\n"+indexerror+":\n"+"\tcall void @throw_oob()\n\tbr label %"+indexok+"\n"+
+        "\n"+indexok+":\n"+"\t%_"+(regnum+3)+" = add i32 1, "+expr1+"\n"+
+        "\t%_"+(regnum+4)+" = getelementptr "+type+", "+type+"* "+reg+", i32 %_"+(regnum+3)+"\n"+
+        "\t%_"+(regnum+5)+" = load "+type+", "+type+"* %_"+(regnum+4)+"\n";
+        write_to_ll(buff);
+        ret = "%_"+(regnum+5); regnum+=6;
+        return ret;
+    }
+
+    /**
+     * f0 -> PrimaryExpression()
+     * f1 -> "."
+     * f2 -> "length"
+     */
+    public String visit(ArrayLength n, String argu) {
+        String _ret=null;
+        n.f0.accept(this, argu);
+        n.f1.accept(this, argu);
+        n.f2.accept(this, argu);
+        return _ret;
+    }
+
+    public String visit(MessageSend n, String argu) {
+        String reg = n.f0.accept(this, "var");
+        Methods method;
+        int register;
+        exprlist = "";
+        String buff = "\t%_"+regnum+" = bitcast i8* "+reg+" to i8***\n"; regnum+=1;
+        buff = buff+"\t%_"+regnum+" = load i8**, i8*** %_"+(regnum-1)+"\n"; regnum+=1;
+        String name = n.f2.accept(this, null);
+
+        // ERROR 195 with currtype
+        int position = vtable.get(currtype).get(name).offset/8;
+        method = vtable.get(currtype).get(name);
+
+        buff = buff+"\t%_"+regnum+" = getelementptr i8*, i8** %_"+(regnum-1)+", i32 "+position+"\n"; regnum+=1;
+        buff = buff+"\t%_"+regnum+" = load i8*, i8** %_"+(regnum-1)+"\n"; regnum+=1;
+        buff = buff+"\t%_"+regnum+" = bitcast i8* %_"+(regnum-1)+" to "+typeinbytes(method.type)+" ("+argsinbytes(method)+")*"+"\n"; regnum+=1;
+        register = regnum-1;
+        write_to_ll(buff);
+        n.f4.accept(this, argu);
+
+        String[] args_array = (reg+","+exprlist).split(",");
+        String[] types_array = argsinbytes(method).split(",");
+        String printargs = argswithtypes(types_array, args_array);
+
+        buff = "\t%_"+regnum+" = call "+typeinbytes(method.type)+" %_"+register+"("+printargs+")\n";
+        register = regnum; regnum+=1;
+        write_to_ll(buff);
+        currtype=method.type;
+        return "%_"+register;
+    }
+
+    public String visit(ExpressionList n, String argu) {
+        String expr = n.f0.accept(this, "var");
+        exprlist=expr;
+        n.f1.accept(this, argu);
+        return null;
+    }
+
+    public String visit(ExpressionTerm n, String argu) {
+        String expr = n.f1.accept(this, "var");
+        exprlist = exprlist+","+expr;
+        return null;
+    }
+
+    public String visit(IntegerLiteral n, String argu) {
+        currtype = "int";
+       return n.f0.accept(this, argu);
+    }
+
+    public String visit(TrueLiteral n, String argu) {
+        currtype = "boolean";
+        return "1";
+    }
+
+    public String visit(FalseLiteral n, String argu) {
+        currtype = "boolean";
+        return "0";
+    }
+
+    public String visit(Identifier n, String argu) {
+        String name = n.f0.accept(this, argu);
+        String buff="", typevar;
+        if(argu!=null){
+            if((var = symboltable.findvar(symboltable.currentclass.name, symboltable.currentmethod.name, name, true))!=null){
+                typevar = typeinbytes(var.type);
+                Classes findin = symboltable.inclass;
+                if(findin!=null) {
+                    int offset = 8+findin.vars.get(var.name).offset;
+                    buff = buff+"\t%_"+regnum+" = getelementptr i8, i8* %this, i32 "+offset+"\n"; regnum+=1;
+                    buff = buff+"\t%_"+regnum+" = bitcast i8* %_"+(regnum-1)+" to "+typeinbytes(var.type)+"*\n";
+                    write_to_ll(buff);
+                    typevar = typeinbytes(var.type);
+                    register = "%_"+regnum;
+                    name = register;
+                    regnum+=1;
+                }
+                else name = "%"+name;
+                if(!storevar){
+                    write_to_ll("\t%_"+regnum+" = load "+typevar+", "+typevar+"* "+name+"\n");
+                    name = "%_"+regnum;
+                    regnum+=1;
+                }
+                currtype = var.type;
+            }
+        }
+        return name;
+    }
+
+    public String visit(ThisExpression n, String argu) {
+        currtype = symboltable.currentclass.name;
+        return "%this";
+    }
+
+    public String visit(BooleanArrayAllocationExpression n, String argu) {
+        indexnum+=1;
+        String indexok="index_ok_"+(indexnum-1);
+        String indexerror="index_error_"+(indexnum-1);
+        String buff, ret;
+
+        String reg = n.f3.accept(this, argu);
+        buff="\t%_"+regnum+" = add i32 1"+", "+reg+"\n"+
+        "\t%_"+(regnum+1)+" = icmp sge i32 %_"+regnum+", 1\n"+
+        "\tbr i1 %_"+(regnum+1)+", label %"+indexok+", label %"+indexerror+"\n\n"+
+        indexerror+":\n\tcall void @throw_nsz()\n\tbr label %"+indexok+"\n\n"+
+        indexok+":\n\t%_"+(regnum+2)+" = call i8* @calloc(i32 %_"+regnum+", i32 4)\n"+
+        "\t%_"+(regnum+3)+" = bitcast i8* %_"+(regnum+2)+" to i32*\n"+
+        "\tstore i32 "+reg+", i32* %_"+(regnum+3);
+        ret="%_"+(regnum+3); regnum+=4;
+        write_to_ll(buff);
+        return ret;
+    }
+
+    public String visit(IntegerArrayAllocationExpression n, String argu) {
+        indexnum+=1;
+        String indexok="index_ok_"+(indexnum-1);
+        String indexerror="index_error_"+(indexnum-1);
+        String buff, ret;
+
+        String reg = n.f3.accept(this, argu);
+        buff="\t%_"+regnum+" = add i32 1"+", "+reg+"\n"+
+        "\t%_"+(regnum+1)+" = icmp sge i32 %_"+regnum+", 1\n"+
+        "\tbr i1 %_"+(regnum+1)+", label %"+indexok+", label %"+indexerror+"\n\n"+
+        indexerror+":\n\tcall void @throw_nsz()\n\tbr label %"+indexok+"\n\n"+
+        indexok+":\n\t%_"+(regnum+2)+" = call i8* @calloc(i32 %_"+regnum+", i32 4)\n"+
+        "\t%_"+(regnum+3)+" = bitcast i8* %_"+(regnum+2)+" to i32*\n"+
+        "\tstore i32 "+reg+", i32* %_"+(regnum+3)+"\n";
+        ret="%_"+(regnum+3); regnum+=4;
+        write_to_ll(buff);
+        return ret;
+    }
+
+
     public String visit(AllocationExpression n, String argu) {
         String name = n.f1.accept(this, argu), regret=null, buff;
         HashMap<String, Methods> methodmap = vtable.get(name);
@@ -277,84 +444,19 @@ public class GenCode extends GJDepthFirst<String, String>{
         return "%_"+(regnum-3);
     }
 
-    /**
-     * f0 -> "!"
-     * f1 -> Clause()
-     */
     public String visit(NotExpression n, String argu) {
         String reg=n.f1.accept(this, "boolean");
         String ret = "%_"+regnum;
-        write_to_ll( "\t%_"+regnum+" = xor il 1, "+reg+"\n");
+        write_to_ll( "\t%_"+regnum+" = xor i1 1, "+reg+"\n");
         regnum+=1;
         return ret;
     }
 
-    public String visit(MessageSend n, String argu) {
-       String reg = n.f0.accept(this, argu);
-       Methods method;
-       int register;
-       String buff = "\t%_"+regnum+" = bitcast i8* "+reg+" to i8***\n"; regnum+=1;
-       buff = buff+"\t%_"+regnum+" = load i8**, i8*** %_"+(regnum-1)+"\n"; regnum+=1;
-       String name = n.f2.accept(this, null);
-       int position = vtable.get(currtype).get(name).offset/8;
-       method = vtable.get(currtype).get(name);
-
-       buff = buff+"\t%_"+regnum+" = getelementptr i8*, i8** %_"+(regnum-1)+", i32 "+position+"\n"; regnum+=1;
-       buff = buff+"\t%_"+regnum+" = load i8*, i8** %_"+(regnum-1)+"\n"; regnum+=1;
-       buff = buff+"\t%_"+regnum+" = bitcast i8* %_"+(regnum-1)+" to "+typeinbytes(method.type)+" ("+argsinbytes(method)+")*"+"\n"; regnum+=1;
-       register = regnum-1;
-       write_to_ll(buff);
-
-       n.f4.accept(this, argu);
-
-       String[] args_array = (reg+","+exprlist).split(",");
-       String[] types_array = argsinbytes(method).split(",");
-       String printargs = argswithtypes(types_array, args_array);
-
-       buff = "\t%_"+regnum+" = call "+typeinbytes(method.type)+" %_"+register+"("+printargs+")\n";
-       register = regnum; regnum+=1;
-       write_to_ll(buff);
-       currtype=method.type;
-       return "%_"+register;
-    }
-
-    public String visit(ExpressionList n, String argu) {
-        String expr = n.f0.accept(this, argu);
-        exprlist=expr;
-        n.f1.accept(this, argu);
-        return null;
-    }
-
-    public String visit(ExpressionTerm n, String argu) {
-        String expr = n.f1.accept(this, argu);
-        exprlist = exprlist+","+expr;
-        return null;
-    }
-
-    /**
-     * f0 -> "("
-     * f1 -> Expression()
-     * f2 -> ")"
-     */
     public String visit(BracketExpression n, String argu) {
-        String _ret=null;
-        String reg = n.f1.accept(this, argu);
-        System.out.println("brackets: "+reg+" currtype "+currtype);
-        return reg;
+        return n.f1.accept(this, argu);
     }
 
-    public String visit(Expression n, String argu) {
-        String returned = n.f0.accept(this, argu);
-        write_to_ll("\n");
-        return returned;
-    }
-
-    public String visit(PrintStatement n, String argu) {
-        String _ret=null;
-        String regexpr = n.f2.accept(this, " ");
-        write_to_ll("\tcall void (i32) @print_int(i32 "+regexpr+")\n");
-        return null;
-    }
+    // ----------------F U N C T I O N S----------------
 
     public String typeinbytes(String type){
         String returned="";

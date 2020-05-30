@@ -6,7 +6,7 @@ c_all:
 	javac Main.java
 
 compile:
-	javac Main.java
+	@javac Main.java
 
 r_all:
 	./run_test_files.sh ./test_files/minijava-error

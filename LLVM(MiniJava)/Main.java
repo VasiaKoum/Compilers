@@ -39,7 +39,8 @@ class Main{
 			}
 			catch(RuntimeException ex){
 				System.out.println("Compilation error at:");
-				System.out.println(ex.getMessage()+"\n");
+				ex.printStackTrace(); 
+				System.out.println(ex+"\n");
 				continue;
 			}
 			catch(ParseException ex){
