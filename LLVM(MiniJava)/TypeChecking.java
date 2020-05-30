@@ -5,10 +5,12 @@ import java.io.*;
 
 public class TypeChecking extends GJDepthFirst<String, String>{
     SymbolTable symboltable, STsymboltable;
+    String arglist;
 
     public TypeChecking(SymbolTable st, SymbolTable finalst){
         this.STsymboltable = st;
         this.symboltable = finalst;
+        this.arglist = "";
     }
 
     public String visit(MainClass n, String argu) {
@@ -190,6 +192,7 @@ public class TypeChecking extends GJDepthFirst<String, String>{
        String id = n.f2.accept(this, null);
        Methods method = null;
        String args = null;
+       String arglist = "";
        if((method = symboltable.findmethod(STsymboltable, symboltable.currentclass.name, symboltable.currentmethod.name, prim, id))!=null){
            for (String keyvars : method.args.keySet()) {
                if(args==null) args = method.args.get(keyvars).type;
@@ -199,6 +202,7 @@ public class TypeChecking extends GJDepthFirst<String, String>{
            symboltable.numpars = 0;
            symboltable.numargs = method.args.size();
            _ret = method.type;
+           System.out.println("MessageSend: "+method.classpar+"."+method.name+" "+method.type+" "+symboltable.methodpars);
            n.f4.accept(this, method.name);
            if(method.args.size()!=symboltable.numpars) throw new RuntimeException("MessageSend: Method "+method.name+" cannot be applied to given types.");
        }
@@ -216,8 +220,10 @@ public class TypeChecking extends GJDepthFirst<String, String>{
             else args[0] = symboltable.methodpars;
             oldnumpars = symboltable.numpars;
             String expr = n.f0.accept(this, args[0]);
+
             symboltable.numpars = oldnumpars;
             symboltable.numpars+=1;
+            System.out.println("ExpressionList: "+args[0]+" "+expr+" "+symboltable.methodpars);
             if(!args[0].equals(expr)){
                 if(!symboltable.checkparent(STsymboltable, args[0], expr))
                     throw new RuntimeException("ExpressionList: Wrong given types at method, given: "+expr+" expected: "+args[0]);
@@ -244,6 +250,7 @@ public class TypeChecking extends GJDepthFirst<String, String>{
            String expr = n.f1.accept(this, args[0]);
            symboltable.numpars = oldnumpars;
            symboltable.numpars+=1;
+           System.out.println("ExpressionTerm: "+args[0]+" "+expr+" "+symboltable.methodpars);
            if(!args[0].equals(expr)) {
                if(!symboltable.checkparent(STsymboltable, args[0], expr))
                     throw new RuntimeException("ExpressionTerm: Wrong given types at method, given: "+expr+" expected: "+args[0]);

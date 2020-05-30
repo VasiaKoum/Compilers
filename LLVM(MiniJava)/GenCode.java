@@ -62,7 +62,6 @@ public class GenCode extends GJDepthFirst<String, String>{
     public String visit(VarDeclaration n, String argu) {
         String buff;
         String name = n.f1.accept(this, argu);
-        // System.out.println("VarDeclaration: "+symboltable.currentclass.name+"."+symboltable.currentmethod.name+" "+name+" "+argu+" "+symboltable.scope);
         if(!"Class".equals(symboltable.scope)){
             buff = "\t%"+name+" = alloca "+typeinbytes(n.f0.accept(this, argu))+"\n";
             write_to_ll(buff);
@@ -117,10 +116,6 @@ public class GenCode extends GJDepthFirst<String, String>{
         return n.f0.accept(this, argu)+"[]";
     }
 
-    // public String visit(Statement n, String argu) {
-    //     return n.f0.accept(this, argu);
-    // }
-
     // ----------------S T A T E M E N T S----------------
 
     public String visit(AssignmentStatement n, String argu) {
@@ -130,7 +125,6 @@ public class GenCode extends GJDepthFirst<String, String>{
         String reg1 = n.f0.accept(this, "var");
         storevar = false;
         String type = typeinbytes(currtype);
-        // System.out.println( symboltable.currentclass.name+" "+symboltable.currentmethod.name+" "+type+" "+reg1+" = "+reg2);
         write_to_ll("\tstore "+type+" "+reg2+", "+type+"* "+reg1+"\n");
         return null;
     }
@@ -139,25 +133,52 @@ public class GenCode extends GJDepthFirst<String, String>{
         indexnum+=1;
         String indexok="index_ok_"+(indexnum-1);
         String indexerror="index_error_"+(indexnum-1);
-        String reg = n.f0.accept(this, "array"), buff;
+        String reg = n.f0.accept(this, "array"), buff, tmpreg;
         String type = typeinbytes(currtype.substring(0, currtype.length()-2));
-        write_to_ll("\t%_"+regnum+" = load "+type+", "+type+"* "+reg+"\n");
+        tmpreg=reg;
+        Boolean boolarray=false;
+        if(currtype.equals("boolean[]")){
+            write_to_ll("\t%_"+regnum+" = bitcast i8* "+reg+" to i32*\n");
+            tmpreg="%_"+regnum;
+            regnum+=1;
+            boolarray=true;
+        }
+        write_to_ll("\t%_"+regnum+" = load i32, i32* "+tmpreg+"\n");
         int regtmp = regnum; regnum+=1;
         String expr1 = n.f2.accept(this, argu);
-        buff="\t%_"+regnum+" = icmp sge i32 "+expr1+", "+0+"\n"+
-        "\t%_"+(regnum+1)+" = icmp slt i32 "+expr1+", %_"+regtmp+"\n"+
-        "\t%_"+(regnum+2)+" = and i1 %_"+regnum+", %_"+(regnum+1)+"\n"+
-        "\tbr i1 %_"+(regnum+2)+", label %"+indexok+", label %"+indexerror+"\n"+
-        "\n"+indexerror+":\n"+"\tcall void @throw_oob()\n\tbr label %"+indexok+"\n"+
-        "\n"+indexok+":\n";
-        write_to_ll(buff);
-        regnum+=3;
-        String expr2 = n.f5.accept(this, argu);
-        buff="\t%_"+regnum+" = add i32 1, "+expr1+"\n"+
-        "\t%_"+(regnum+1)+" = getelementptr "+type+", "+type+"* "+reg+", i32 %_"+regnum+"\n"+
-        "\tstore "+type+" "+expr2+", "+type+"* %_"+(regnum+1)+"\n";
-        write_to_ll(buff);
-        regnum+=2;
+        if(boolarray){
+            buff="\t%_"+regnum+" = icmp sge i32 "+expr1+", "+0+"\n"+
+            "\t%_"+(regnum+1)+" = icmp slt i32 "+expr1+", %_"+regtmp+"\n"+
+            "\t%_"+(regnum+2)+" = and i1 %_"+regnum+", %_"+(regnum+1)+"\n"+
+            "\tbr i1 %_"+(regnum+2)+", label %"+indexok+", label %"+indexerror+"\n"+
+            "\n"+indexerror+":\n"+"\tcall void @throw_oob()\n\tbr label %"+indexok+"\n"+
+            "\n"+indexok+":\n";
+            write_to_ll(buff);
+            regnum+=3;
+            String expr2 = n.f5.accept(this, argu);
+            buff="\t%_"+regnum+" = add i32 4, "+expr1+"\n"+
+            "\t%_"+(regnum+1)+" = zext i1 "+expr2+" to i8\n"+
+            "\t%_"+(regnum+2)+" = getelementptr i8, i8* "+reg+", i32 %_"+regnum+"\n"+
+            "\tstore i8 %_"+(regnum+1)+", i8* %_"+(regnum+2)+"\n";
+            write_to_ll(buff);
+            regnum+=3;
+        }
+        else{
+            buff="\t%_"+regnum+" = icmp sge i32 "+expr1+", "+0+"\n"+
+            "\t%_"+(regnum+1)+" = icmp slt i32 "+expr1+", %_"+regtmp+"\n"+
+            "\t%_"+(regnum+2)+" = and i1 %_"+regnum+", %_"+(regnum+1)+"\n"+
+            "\tbr i1 %_"+(regnum+2)+", label %"+indexok+", label %"+indexerror+"\n"+
+            "\n"+indexerror+":\n"+"\tcall void @throw_oob()\n\tbr label %"+indexok+"\n"+
+            "\n"+indexok+":\n";
+            write_to_ll(buff);
+            regnum+=3;
+            String expr2 = n.f5.accept(this, argu);
+            buff="\t%_"+regnum+" = add i32 1, "+expr1+"\n"+
+            "\t%_"+(regnum+1)+" = getelementptr "+type+", "+type+"* "+reg+", i32 %_"+regnum+"\n"+
+            "\tstore "+type+" "+expr2+", "+type+"* %_"+(regnum+1)+"\n";
+            write_to_ll(buff);
+            regnum+=2;
+        }
         return null;
     }
 
@@ -220,6 +241,7 @@ public class GenCode extends GJDepthFirst<String, String>{
         write_to_ll("\tbr label %"+andtmp+"\n\n"+andtmp+":\n\tbr label %"+andexit+
         "\n\n"+andexit+":\n"+"\t%_"+regnum+" = phi i1 [ 0, %"+andfalse+" ], [ "+reg2+", %"+andtmp+" ]\n");
         ret="%_"+regnum; regnum+=1;
+        // currtype="boolean";
         return ret;
     }
 
@@ -229,6 +251,7 @@ public class GenCode extends GJDepthFirst<String, String>{
         String ret = "%_"+regnum;
         write_to_ll( "\t%_"+regnum+" = icmp slt i32 "+reg1+", "+reg2+"\n");
         regnum+=1;
+        // currtype="boolean";
         return ret;
     }
 
@@ -238,6 +261,7 @@ public class GenCode extends GJDepthFirst<String, String>{
         String ret = "%_"+regnum;
         write_to_ll( "\t%_"+regnum+" = add i32 "+reg1+", "+reg2+"\n");
         regnum+=1;
+        // currtype="int";
         return ret;
     }
 
@@ -247,6 +271,7 @@ public class GenCode extends GJDepthFirst<String, String>{
         String ret = "%_"+regnum;
         write_to_ll( "\t%_"+regnum+" = sub i32 "+reg1+", "+reg2+"\n");
         regnum+=1;
+        // currtype="int";
         return ret;
     }
 
@@ -256,6 +281,7 @@ public class GenCode extends GJDepthFirst<String, String>{
         String ret = "%_"+regnum;
         write_to_ll( "\t%_"+regnum+" = mul i32 "+reg1+", "+reg2+"\n");
         regnum+=1;
+        // currtype="int";
         return ret;
     }
 
@@ -264,36 +290,61 @@ public class GenCode extends GJDepthFirst<String, String>{
         indexnum+=1;
         String indexok="index_ok_"+(indexnum-1);
         String indexerror="index_error_"+(indexnum-1);
-        //ERROR HERE
         String reg = n.f0.accept(this, "array"), buff;
+        String typearray = currtype;
+
         String type = typeinbytes(currtype.substring(0, currtype.length()-2));
-        write_to_ll("\t%_"+regnum+" = load "+type+", "+type+"* "+reg+"\n");
-        int regtmp = regnum; regnum+=1;
-        String expr1 = n.f2.accept(this, argu);
-        buff="\t%_"+regnum+" = icmp sge i32 "+expr1+", "+0+"\n"+
-        "\t%_"+(regnum+1)+" = icmp slt i32 "+expr1+", %_"+regtmp+"\n"+
-        "\t%_"+(regnum+2)+" = and i1 %_"+regnum+", %_"+(regnum+1)+"\n"+
-        "\tbr i1 %_"+(regnum+2)+", label %"+indexok+", label %"+indexerror+"\n"+
-        "\n"+indexerror+":\n"+"\tcall void @throw_oob()\n\tbr label %"+indexok+"\n"+
-        "\n"+indexok+":\n"+"\t%_"+(regnum+3)+" = add i32 1, "+expr1+"\n"+
-        "\t%_"+(regnum+4)+" = getelementptr "+type+", "+type+"* "+reg+", i32 %_"+(regnum+3)+"\n"+
-        "\t%_"+(regnum+5)+" = load "+type+", "+type+"* %_"+(regnum+4)+"\n";
-        write_to_ll(buff);
-        ret = "%_"+(regnum+5); regnum+=6;
+        if(typearray.equals("boolean[]")){
+            buff="\t%_"+regnum+" = bitcast i8* "+reg+" to i32*\n"+
+            "\t%_"+(regnum+1)+" = load i32, i32* %_"+regnum+"\n";
+            write_to_ll(buff);
+            int regtmp = (regnum+1); regnum+=2;
+            String expr1 = n.f2.accept(this, argu);
+            buff="\t%_"+regnum+" = icmp sge i32 "+expr1+", "+0+"\n"+
+            "\t%_"+(regnum+1)+" = icmp slt i32 "+expr1+", %_"+regtmp+"\n"+
+            "\t%_"+(regnum+2)+" = and i1 %_"+regnum+", %_"+(regnum+1)+"\n"+
+            "\tbr i1 %_"+(regnum+2)+", label %"+indexok+", label %"+indexerror+"\n"+
+            "\n"+indexerror+":\n"+"\tcall void @throw_oob()\n\tbr label %"+indexok+"\n"+
+            "\n"+indexok+":\n"+"\t%_"+(regnum+3)+" = add i32 4, "+expr1+"\n"+
+            "\t%_"+(regnum+4)+" = getelementptr i8, i8* "+reg+", i32 %_"+(regnum+3)+"\n"+
+            "\t%_"+(regnum+5)+" = load i8, i8* %_"+(regnum+4)+"\n"+
+            "\t%_"+(regnum+6)+" = trunc i8 %_"+(regnum+5)+" to i1\n";
+            write_to_ll(buff);
+            ret = "%_"+(regnum+6); regnum+=7;
+        }
+        else{
+            write_to_ll("\t%_"+regnum+" = load "+type+", "+type+"* "+reg+"\n");
+            int regtmp = regnum; regnum+=1;
+            String expr1 = n.f2.accept(this, argu);
+            buff="\t%_"+regnum+" = icmp sge i32 "+expr1+", "+0+"\n"+
+            "\t%_"+(regnum+1)+" = icmp slt i32 "+expr1+", %_"+regtmp+"\n"+
+            "\t%_"+(regnum+2)+" = and i1 %_"+regnum+", %_"+(regnum+1)+"\n"+
+            "\tbr i1 %_"+(regnum+2)+", label %"+indexok+", label %"+indexerror+"\n"+
+            "\n"+indexerror+":\n"+"\tcall void @throw_oob()\n\tbr label %"+indexok+"\n"+
+            "\n"+indexok+":\n"+"\t%_"+(regnum+3)+" = add i32 1, "+expr1+"\n"+
+            "\t%_"+(regnum+4)+" = getelementptr "+type+", "+type+"* "+reg+", i32 %_"+(regnum+3)+"\n"+
+            "\t%_"+(regnum+5)+" = load "+type+", "+type+"* %_"+(regnum+4)+"\n";
+            write_to_ll(buff);
+            ret = "%_"+(regnum+5); regnum+=6;
+        }
         return ret;
     }
 
-    /**
-     * f0 -> PrimaryExpression()
-     * f1 -> "."
-     * f2 -> "length"
-     */
     public String visit(ArrayLength n, String argu) {
-        String _ret=null;
-        n.f0.accept(this, argu);
-        n.f1.accept(this, argu);
-        n.f2.accept(this, argu);
-        return _ret;
+        String ret;
+        String reg = n.f0.accept(this, "var");
+        System.out.println("ArrayLength: "+currtype);
+        if(currtype.equals("boolean[]")){
+            write_to_ll("\t%_"+regnum+" = bitcast i8* "+reg+" to i32*\n"+"\t%_"+(regnum+1)+" = load i32, i32* %_"+regnum+"\n");
+            ret="%_"+(regnum+1); regnum+=2;
+        }
+        else{
+            write_to_ll("\t%_"+regnum+" = load i32, i32* "+reg+"\n");
+            ret="%_"+regnum; regnum+=1;
+        }
+
+        // currtype = "int";
+        return ret;
     }
 
     public String visit(MessageSend n, String argu) {
@@ -305,7 +356,6 @@ public class GenCode extends GJDepthFirst<String, String>{
         buff = buff+"\t%_"+regnum+" = load i8**, i8*** %_"+(regnum-1)+"\n"; regnum+=1;
         String name = n.f2.accept(this, null);
 
-        // ERROR 195 with currtype
         int position = vtable.get(currtype).get(name).offset/8;
         method = vtable.get(currtype).get(name);
 
@@ -396,15 +446,16 @@ public class GenCode extends GJDepthFirst<String, String>{
         String buff, ret;
 
         String reg = n.f3.accept(this, argu);
-        buff="\t%_"+regnum+" = add i32 1"+", "+reg+"\n"+
-        "\t%_"+(regnum+1)+" = icmp sge i32 %_"+regnum+", 1\n"+
+        buff="\t%_"+regnum+" = add i32 4"+", "+reg+"\n"+
+        "\t%_"+(regnum+1)+" = icmp sge i32 %_"+regnum+", 4\n"+
         "\tbr i1 %_"+(regnum+1)+", label %"+indexok+", label %"+indexerror+"\n\n"+
         indexerror+":\n\tcall void @throw_nsz()\n\tbr label %"+indexok+"\n\n"+
-        indexok+":\n\t%_"+(regnum+2)+" = call i8* @calloc(i32 %_"+regnum+", i32 4)\n"+
+        indexok+":\n\t%_"+(regnum+2)+" = call i8* @calloc(i32 1, i32 %_"+regnum+")\n"+
         "\t%_"+(regnum+3)+" = bitcast i8* %_"+(regnum+2)+" to i32*\n"+
         "\tstore i32 "+reg+", i32* %_"+(regnum+3);
-        ret="%_"+(regnum+3); regnum+=4;
+        ret="%_"+(regnum+2); regnum+=4;
         write_to_ll(buff);
+        currtype="boolean[]";
         return ret;
     }
 
@@ -424,6 +475,7 @@ public class GenCode extends GJDepthFirst<String, String>{
         "\tstore i32 "+reg+", i32* %_"+(regnum+3)+"\n";
         ret="%_"+(regnum+3); regnum+=4;
         write_to_ll(buff);
+        currtype="int[]";
         return ret;
     }
 
@@ -449,6 +501,7 @@ public class GenCode extends GJDepthFirst<String, String>{
         String ret = "%_"+regnum;
         write_to_ll( "\t%_"+regnum+" = xor i1 1, "+reg+"\n");
         regnum+=1;
+        // currtype="boolean";
         return ret;
     }
 
