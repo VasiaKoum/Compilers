@@ -8,8 +8,5 @@ c_all:
 compile:
 	@javac Main.java
 
-r_all:
-	./run_test_files.sh ./test_files/minijava-error
-
 clean:
 	rm -f *.class *~

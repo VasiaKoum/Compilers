@@ -47,7 +47,7 @@ define i32 @main() {
     ; The following sequence of instructions creates a new Base object
 
     ; First, we allocate the required memory on heap for our object.
-    ; We call calloc to achieve this:
+    ; We call calloc to achieve this: 
     ;   * The first argument is the amount of objects we want to allocate
     ;     (always 1 for object allocation, but this is handy when we will look at arrays)
     ;   * The second argument is the size of the object. This is calculated as the sum of the
@@ -93,7 +93,7 @@ define i32 @main() {
 
     ; Do the required bitcasts, so that we can access the vtable pointer
     %_7 = bitcast i8* %_6 to i8***
-
+    
     ; Load vtable_ptr
     %_8 = load i8**, i8*** %_7
 
@@ -178,3 +178,4 @@ define i32 @Derived.set(i8* %this, i32 %.x) {
     %_6 = load i32, i32* %_5
     ret i32 %_6
 }
+

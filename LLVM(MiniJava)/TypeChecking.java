@@ -87,7 +87,6 @@ public class TypeChecking extends GJDepthFirst<String, String>{
         String name = n.f2.accept(this, argu);
         String type = n.f1.accept(this, argu);
         String checkmethod = symboltable.currentclass.name+name;
-        // System.out.println(name+":");
         Methods addMethod = new Methods(name, symboltable.currentclass.name, type);
         symboltable.currentmethod = addMethod;
         symboltable.methods.put(checkmethod, addMethod);
@@ -97,7 +96,9 @@ public class TypeChecking extends GJDepthFirst<String, String>{
         n.f7.accept(this, argu);
         n.f8.accept(this, argu);
         String returned = n.f10.accept(this, type);
-        if(!returned.equals(type)) throw new RuntimeException("MethodDeclaration: Expression is type of: "+returned+ ", expected "+type+".");
+        if(!returned.equals(type))
+            if(!symboltable.checkparent(STsymboltable, type, returned))
+                throw new RuntimeException("MethodDeclaration: Expression is type of: "+returned+ ", expected "+type+".");
         return null;
     }
 
@@ -192,72 +193,35 @@ public class TypeChecking extends GJDepthFirst<String, String>{
        String id = n.f2.accept(this, null);
        Methods method = null;
        String args = null;
-       String arglist = "";
+       arglist = "";
        if((method = symboltable.findmethod(STsymboltable, symboltable.currentclass.name, symboltable.currentmethod.name, prim, id))!=null){
            for (String keyvars : method.args.keySet()) {
                if(args==null) args = method.args.get(keyvars).type;
                else args = args +","+method.args.get(keyvars).type;
            }
            symboltable.methodpars = args;
-           symboltable.numpars = 0;
-           symboltable.numargs = method.args.size();
            _ret = method.type;
-           System.out.println("MessageSend: "+method.classpar+"."+method.name+" "+method.type+" "+symboltable.methodpars);
+           String tmppars = symboltable.methodpars;
            n.f4.accept(this, method.name);
-           if(method.args.size()!=symboltable.numpars) throw new RuntimeException("MessageSend: Method "+method.name+" cannot be applied to given types.");
+           if(tmppars==null){
+               if(!arglist.equals("")) throw new RuntimeException("MessageSend: Method "+method.name+" cannot be applied to given types.");
+           }
+           else
+                if(!arglist.equals(tmppars)) throw new RuntimeException("MessageSend: Method "+method.name+" cannot be applied to given types.");
        }
        else throw new RuntimeException("MessageSend: Not method found: "+id+".");
        return _ret;
     }
 
     public String visit(ExpressionList n, String argu) {
-        String _ret=null;
-        String args[], oldmethod;
-        int oldnumpars;
-        if(symboltable.numpars<symboltable.numargs){
-            args = symboltable.methodpars.split(",", 2);
-            if(args.length>1) symboltable.methodpars = args[1];
-            else args[0] = symboltable.methodpars;
-            oldnumpars = symboltable.numpars;
-            String expr = n.f0.accept(this, args[0]);
-
-            symboltable.numpars = oldnumpars;
-            symboltable.numpars+=1;
-            System.out.println("ExpressionList: "+args[0]+" "+expr+" "+symboltable.methodpars);
-            if(!args[0].equals(expr)){
-                if(!symboltable.checkparent(STsymboltable, args[0], expr))
-                    throw new RuntimeException("ExpressionList: Wrong given types at method, given: "+expr+" expected: "+args[0]);
-            }
-            oldmethod = argu;
-            oldnumpars = symboltable.numpars;
-            String exprt = n.f1.accept(this, argu);
-            if(!argu.equals(oldmethod)) symboltable.numpars = oldnumpars;
-        }
-        else throw new RuntimeException("ExpressionList: Wrong given types at method");
-
-        return _ret;
+        arglist=n.f0.accept(this, "var");
+        n.f1.accept(this, "var");
+        return arglist;
     }
 
     public String visit(ExpressionTerm n, String argu) {
-       String _ret=null;
-       int oldnumpars;
-       String args[];
-       if(symboltable.numpars<=symboltable.numargs){
-           args = symboltable.methodpars.split(",", 2);
-           if(args.length>1) symboltable.methodpars = args[1];
-           else args[0] = symboltable.methodpars;
-           oldnumpars = symboltable.numpars;
-           String expr = n.f1.accept(this, args[0]);
-           symboltable.numpars = oldnumpars;
-           symboltable.numpars+=1;
-           System.out.println("ExpressionTerm: "+args[0]+" "+expr+" "+symboltable.methodpars);
-           if(!args[0].equals(expr)) {
-               if(!symboltable.checkparent(STsymboltable, args[0], expr))
-                    throw new RuntimeException("ExpressionTerm: Wrong given types at method, given: "+expr+" expected: "+args[0]);
-           }
-       }
-       else throw new RuntimeException("ExpressionList: Wrong given types at method");
-       return _ret;
+        arglist=arglist+","+n.f1.accept(this, "var");
+        return null;
     }
 
     public String visit(ArrayAssignmentStatement n, String argu) {

@@ -378,15 +378,13 @@ public class GenCode extends GJDepthFirst<String, String>{
     }
 
     public String visit(ExpressionList n, String argu) {
-        String expr = n.f0.accept(this, "var");
-        exprlist=expr;
+        exprlist=n.f0.accept(this, "var");
         n.f1.accept(this, argu);
         return null;
     }
 
     public String visit(ExpressionTerm n, String argu) {
-        String expr = n.f1.accept(this, "var");
-        exprlist = exprlist+","+expr;
+        exprlist = exprlist+","+n.f1.accept(this, "var");
         return null;
     }
 
