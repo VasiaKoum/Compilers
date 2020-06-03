@@ -206,8 +206,18 @@ public class TypeChecking extends GJDepthFirst<String, String>{
            if(tmppars==null){
                if(!arglist.equals("")) throw new RuntimeException("MessageSend: Method "+method.name+" cannot be applied to given types.");
            }
-           else
-                if(!arglist.equals(tmppars)) throw new RuntimeException("MessageSend: Method "+method.name+" cannot be applied to given types.");
+           else{
+                String[] declstrings = tmppars.split(",");
+                String[] argustrings = arglist.split(",");
+                if(declstrings.length == argustrings.length){
+                    for(int i=0; i<declstrings.length; i++){
+                        if(!argustrings[i].equals(declstrings[i]))
+                            if(!symboltable.checkparent(STsymboltable, declstrings[i], argustrings[i]))
+                                throw new RuntimeException("MessageSend: Method "+method.name+" cannot be applied to given types.");
+                    }
+
+                }
+            }
        }
        else throw new RuntimeException("MessageSend: Not method found: "+id+".");
        return _ret;

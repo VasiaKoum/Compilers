@@ -12,8 +12,6 @@ public class GenCode extends GJDepthFirst<String, String>{
     Boolean storevar;
     int regnum, ifnum, whilenum, andnum, indexnum;
 
-    // clang -o out1 ex.ll
-
     public GenCode(SymbolTable st, FileWriter file){
         this.symboltable = st;
         this.llfile = file;
@@ -333,7 +331,6 @@ public class GenCode extends GJDepthFirst<String, String>{
     public String visit(ArrayLength n, String argu) {
         String ret;
         String reg = n.f0.accept(this, "var");
-        System.out.println("ArrayLength: "+currtype);
         if(currtype.equals("boolean[]")){
             write_to_ll("\t%_"+regnum+" = bitcast i8* "+reg+" to i32*\n"+"\t%_"+(regnum+1)+" = load i32, i32* %_"+regnum+"\n");
             ret="%_"+(regnum+1); regnum+=2;
@@ -342,7 +339,6 @@ public class GenCode extends GJDepthFirst<String, String>{
             write_to_ll("\t%_"+regnum+" = load i32, i32* "+reg+"\n");
             ret="%_"+regnum; regnum+=1;
         }
-
         // currtype = "int";
         return ret;
     }
