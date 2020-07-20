@@ -217,6 +217,7 @@ public class TypeChecking extends GJDepthFirst<String, String>{
                     }
 
                 }
+                else throw new RuntimeException("MessageSend: Method "+method.name+" cannot be applied to given types.");
             }
        }
        else throw new RuntimeException("MessageSend: Not method found: "+id+".");

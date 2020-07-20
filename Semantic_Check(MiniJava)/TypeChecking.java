@@ -5,10 +5,12 @@ import java.io.*;
 
 public class TypeChecking extends GJDepthFirst<String, String>{
     SymbolTable symboltable, STsymboltable;
+    String arglist;
 
     public TypeChecking(SymbolTable st, SymbolTable finalst){
         this.STsymboltable = st;
         this.symboltable = finalst;
+        this.arglist = "";
     }
 
     public String visit(MainClass n, String argu) {
@@ -85,7 +87,6 @@ public class TypeChecking extends GJDepthFirst<String, String>{
         String name = n.f2.accept(this, argu);
         String type = n.f1.accept(this, argu);
         String checkmethod = symboltable.currentclass.name+name;
-        // System.out.println(name+":");
         Methods addMethod = new Methods(name, symboltable.currentclass.name, type);
         symboltable.currentmethod = addMethod;
         symboltable.methods.put(checkmethod, addMethod);
@@ -95,7 +96,9 @@ public class TypeChecking extends GJDepthFirst<String, String>{
         n.f7.accept(this, argu);
         n.f8.accept(this, argu);
         String returned = n.f10.accept(this, type);
-        if(!returned.equals(type)) throw new RuntimeException("MethodDeclaration: Expression is type of: "+returned+ ", expected "+type+".");
+        if(!returned.equals(type))
+            if(!symboltable.checkparent(STsymboltable, type, returned))
+                throw new RuntimeException("MethodDeclaration: Expression is type of: "+returned+ ", expected "+type+".");
         return null;
     }
 
@@ -103,7 +106,7 @@ public class TypeChecking extends GJDepthFirst<String, String>{
         String name = n.f0.accept(this, argu);
         String expr;
         Variables idvar;
-        if((idvar = symboltable.findvar(symboltable.currentclass.name, symboltable.currentmethod.name, name))!=null){
+        if((idvar = symboltable.findvar(symboltable.currentclass.name, symboltable.currentmethod.name, name, false))!=null){
             expr = n.f2.accept(this, idvar.type);
             if(!(idvar.type.equals(expr))){
                 if(!symboltable.checkparent(STsymboltable, idvar.type, expr))
@@ -190,57 +193,46 @@ public class TypeChecking extends GJDepthFirst<String, String>{
        String id = n.f2.accept(this, null);
        Methods method = null;
        String args = null;
+       arglist = "";
        if((method = symboltable.findmethod(STsymboltable, symboltable.currentclass.name, symboltable.currentmethod.name, prim, id))!=null){
            for (String keyvars : method.args.keySet()) {
                if(args==null) args = method.args.get(keyvars).type;
                else args = args +","+method.args.get(keyvars).type;
            }
            symboltable.methodpars = args;
-           symboltable.numpars = 0;
-           symboltable.numargs = method.args.size();
            _ret = method.type;
-           n.f4.accept(this, argu);
-           if(method.args.size()!=symboltable.numpars) throw new RuntimeException("MessageSend: Method "+method.name+" cannot be applied to given types.");
+           String tmppars = symboltable.methodpars;
+           n.f4.accept(this, method.name);
+           if(tmppars==null){
+               if(!arglist.equals("")) throw new RuntimeException("MessageSend: Method "+method.name+" cannot be applied to given types.");
+           }
+           else{
+                String[] declstrings = tmppars.split(",");
+                String[] argustrings = arglist.split(",");
+                if(declstrings.length == argustrings.length){
+                    for(int i=0; i<declstrings.length; i++){
+                        if(!argustrings[i].equals(declstrings[i]))
+                            if(!symboltable.checkparent(STsymboltable, declstrings[i], argustrings[i]))
+                                throw new RuntimeException("MessageSend: Method "+method.name+" cannot be applied to given types.");
+                    }
+
+                }
+                else throw new RuntimeException("MessageSend: Method "+method.name+" cannot be applied to given types.");
+            }
        }
        else throw new RuntimeException("MessageSend: Not method found: "+id+".");
        return _ret;
     }
 
     public String visit(ExpressionList n, String argu) {
-        String _ret=null;
-        String args[];
-        if(symboltable.numpars<symboltable.numargs){
-            args = symboltable.methodpars.split(",", 2);
-            if(args.length>1) symboltable.methodpars = args[1];
-            else args[0] = symboltable.methodpars;
-            String expr = n.f0.accept(this, args[0]);
-            if(!args[0].equals(expr)){
-                if(!symboltable.checkparent(STsymboltable, args[0], expr))
-                    throw new RuntimeException("ExpressionList: Wrong given types at method, given: "+expr+" expected: "+args[0]);
-            }
-            String exprt = n.f1.accept(this, argu);
-            symboltable.numpars+=1;
-        }
-        else throw new RuntimeException("ExpressionList: Wrong given types at method");
-        return _ret;
+        arglist=n.f0.accept(this, "var");
+        n.f1.accept(this, "var");
+        return arglist;
     }
 
     public String visit(ExpressionTerm n, String argu) {
-       String _ret=null;
-       String args[];
-       if(symboltable.numpars<symboltable.numargs){
-           args = symboltable.methodpars.split(",", 2);
-           if(args.length>1) symboltable.methodpars = args[1];
-           else args[0] = symboltable.methodpars;
-           String expr = n.f1.accept(this, args[0]);
-           symboltable.numpars+=1;
-           if(!args[0].equals(expr)) {
-               if(!symboltable.checkparent(STsymboltable, args[0], expr))
-                    throw new RuntimeException("ExpressionTerm: Wrong given types at method, given: "+expr+" expected: "+args[0]);
-           }
-       }
-       else throw new RuntimeException("ExpressionList: Wrong given types at method");
-       return _ret;
+        arglist=arglist+","+n.f1.accept(this, "var");
+        return null;
     }
 
     public String visit(ArrayAssignmentStatement n, String argu) {
@@ -248,7 +240,7 @@ public class TypeChecking extends GJDepthFirst<String, String>{
        String name = n.f0.accept(this, argu);
        String expr, index, type;
        Variables idvar;
-       if((idvar = symboltable.findvar(symboltable.currentclass.name, symboltable.currentmethod.name, name))!=null){
+       if((idvar = symboltable.findvar(symboltable.currentclass.name, symboltable.currentmethod.name, name, false))!=null){
            if(idvar.type.equals("int[]") || idvar.type.equals("boolean[]")){
                type = idvar.type.replace("[]","");
                index = n.f2.accept(this, "int");
@@ -297,7 +289,7 @@ public class TypeChecking extends GJDepthFirst<String, String>{
         String name = n.f0.accept(this, argu);
         Variables idvar;
         if(argu!=null){
-            if((idvar = symboltable.findvar(symboltable.currentclass.name, symboltable.currentmethod.name, name))!=null){
+            if((idvar = symboltable.findvar(symboltable.currentclass.name, symboltable.currentmethod.name, name, false))!=null){
                 name = idvar.type;
             }
             else {

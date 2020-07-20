@@ -69,7 +69,7 @@ public class VisitorSymbolTable extends GJDepthFirst<String, String>{
        String _ret=null;
        String name = n.f1.accept(this, argu);
        String type = n.f0.accept(this, argu);
-       if(symboltable.findvar(symboltable.currentclass.name, symboltable.currentmethod.name, name)!=null){
+       if(symboltable.findvar(symboltable.currentclass.name, symboltable.currentmethod.name, name, false)!=null){
            throw new RuntimeException("FormalParameter: Already declared: "+type+" "+name);
        }
        else {

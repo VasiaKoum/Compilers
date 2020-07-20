@@ -6,7 +6,7 @@ import java.io.*;
 class SymbolTable{
     LinkedHashMap<String, Classes> classes;
     LinkedHashMap<String, Methods> methods;
-    Classes currentclass;
+    Classes currentclass, inclass;
     Methods currentmethod;
     static String scope;
     static String methodpars;
@@ -75,14 +75,18 @@ class SymbolTable{
         }
     }
 
-    public Variables findvar(String nclass, String nmethod, String nvar){
+    public Variables findvar(String nclass, String nmethod, String nvar, boolean gencode){
         Variables var=null;
         boolean not_found=true;
+        inclass = null;
         if(methods.get(nclass+nmethod)!=null){
             if(methods.get(nclass+nmethod).vars.get(nvar)!=null) var = methods.get(nclass+nmethod).vars.get(nvar);
             else if(methods.get(nclass+nmethod).args.get(nvar)!=null) var = methods.get(nclass+nmethod).args.get(nvar);
             else if(classes.get(nclass)!=null){
-                if(classes.get(nclass).vars.get(nvar)!=null) var = classes.get(nclass).vars.get(nvar);
+                if(classes.get(nclass).vars.get(nvar)!=null) {
+                    var = classes.get(nclass).vars.get(nvar);
+                    if(gencode) inclass = classes.get(nclass);
+                }
                 else{
                     String parentname;
                     if(classes.get(nclass).parent!=null){
@@ -90,6 +94,7 @@ class SymbolTable{
                         while(not_found){
                             if(classes.get(parentname).vars.get(nvar)!=null) {
                                 var = classes.get(parentname).vars.get(nvar);
+                                if(gencode) inclass = classes.get(parentname);
                                 not_found = false;
                             }
                             else{
@@ -106,7 +111,7 @@ class SymbolTable{
 
     public Methods findmethod(SymbolTable oldst, String nclass, String nmethod, String primname, String methodname){
         Methods method = null;
-        Variables var = findvar(nclass, nmethod, primname);
+        Variables var = findvar(nclass, nmethod, primname, false);
         boolean not_found = true;
         if(var == null) nclass = primname;
         else nclass = var.type;
@@ -244,10 +249,21 @@ class SymbolTable{
             }
             i++;
         }
-
-
     }
 
+    public int sizeClass(String nclass){
+        int size=0;
+        Classes parent;
+        while((parent = classes.get(nclass))!=null){
+            for (String keyvars : classes.get(nclass).vars.keySet()) {
+                if("int".equals(classes.get(nclass).vars.get(keyvars).type)) size+=4;
+                else if ("boolean".equals(classes.get(nclass).vars.get(keyvars).type)) size+=1;
+                else size+=8;
+            }
+            nclass = classes.get(nclass).parent;
+        }
+        return size;
+    }
 
     public void IterateSymbolTable(){
         System.out.println("\n\nLINKEDHASHMAP printing: ");
